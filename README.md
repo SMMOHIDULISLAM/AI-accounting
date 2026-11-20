@@ -121,4 +121,4 @@ Export backups from the app and keep more than one copy in a safe location. Test
 
 ## Repository and deployment status
 
-A private repository named `AI-accounting` has been requested in the project plan, but this README does not claim that the repository exists or that source transfer has completed. Creating or publishing a repository is a separate, owner-authorized step. No paid hosting, cloud ledger, API purchase, billing integration, or cloud inference is required for the local version.
+The private repository https://github.com/SMMOHIDULISLAM/AI-accounting was created through owner authorization, and the saved source transfer was verified and completed on 20 November 2026. The web foundation is available in Preview but has not been published. The no-install F-drive package and online/mobile synchronization remain unfinished. No paid hosting, cloud ledger, API purchase, billing integration, or cloud inference is required for the current local-run source version.
