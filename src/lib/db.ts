@@ -420,7 +420,9 @@ function checkSchema(db: SQLDatabase): void {
       throw new Error("Invalid ledger account");
     if (
       row.parent_id !== null &&
-      (!accountIds.has(row.parent_id) || row.parent_id === row.id)
+      (!accountIds.has(row.parent_id) ||
+        row.parent_id === row.id ||
+        accountRows.find((parent) => parent.id === row.parent_id)?.type !== row.type)
     )
       throw new Error("Invalid account parent");
   }
@@ -538,7 +540,9 @@ function checkSchema(db: SQLDatabase): void {
       matchedJournal.status !== "posted" ||
       !line ||
       !["bank", "cash"].includes(line.account_id) ||
-      Number(source.amount) !== Number(line.debit) - Number(line.credit)
+      Number(source.amount) !== Number(line.debit) - Number(line.credit) ||
+      Math.abs(Date.parse(matchedJournal.date) - Date.parse(source.date)) >
+        3 * 86400000
     )
       throw new Error("Invalid reconciliation match");
   }

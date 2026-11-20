@@ -31,3 +31,9 @@ Prepare source, launcher/splash assets, checks and a saved native checkpoint for
 The web foundation is complete as a prototype and is privately connected to GitHub. Nineteen checks passed and the blank report-date defect was verified in a browser. Seven public accounting repositories were cloned for inspection; their code was not integrated into the product. Relevant licenses and boundaries are documented in OPEN-SOURCE-REUSE.md.
 
 This task is already bound to the web project and currently has no native initialization/attachment tools. No Android project or APK has been created. Continue the native build in a fresh mobile-capable task only after the user explicitly approves creating that task. Carry this plan, the source bundle and the research notes into it.
+
+## Continuation authorized
+
+The user explicitly approved creating the private dedicated Android build task, now at https://manus.im/app/kmzg4ozr5REneMxY5BX8LC. The Android plan and source bundle were attached. Native implementation/build outcomes must be verified there; the existing web project remains intact and unpublished.
+
+The user's follow-up requested on-device SQLite and USB backup testing. SQLITE-BACKUP-TESTS.md records host/foundation preflight evidence and the outstanding native checks. Two web restore validation omissions were corrected and passed regression: a parent account must have the child's account type, and a restored reconciliation link must meet the same three-day date policy as a live match. Carry these safeguards into the native port; host tests do not substitute for Android and physical USB verification.

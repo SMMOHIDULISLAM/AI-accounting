@@ -1,5 +1,6 @@
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it } from "vitest";
+import initSqlJs from "sql.js";
 import {
   exportCSV,
   mapCSV,
@@ -10,6 +11,19 @@ import { Ledger } from "../src/lib/db";
 import { isValidDate, parseMoney, report } from "../src/lib/accounting";
 
 let ledger: Ledger | undefined;
+
+async function alteredBackup(bytes: Uint8Array, sql: string, params: string[]) {
+  const SQL = await initSqlJs({
+    locateFile: (file) => `${process.cwd()}/node_modules/sql.js/dist/${file}`,
+  });
+  const db = new SQL.Database(bytes);
+  try {
+    db.run(sql, params);
+    return new Uint8Array(db.export());
+  } finally {
+    db.close();
+  }
+}
 
 afterEach(async () => {
   await ledger?.release();
@@ -380,6 +394,55 @@ describe("ledger controls and reports", () => {
     const altered = await ledger.backup();
     altered[0] ^= 0xff;
     await expect(ledger.restore(altered)).rejects.toThrow(/backup|integrity/i);
+    expect(ledger.snapshot()).toEqual(before);
+  });
+
+  it("rejects a restored reconciliation match outside the live three-day policy", async () => {
+    ledger = await Ledger.open();
+    const id = await ledger.saveDraft({
+      date: "2025-01-02",
+      description: "Sale",
+      lines: [
+        { accountId: "bank", debit: 10000, credit: 0 },
+        { accountId: "sales", debit: 0, credit: 10000 },
+      ],
+    });
+    await ledger.post(id);
+    await ledger.importRows([{
+      date: "2025-01-02",
+      description: "Statement sale",
+      amount: 10000,
+      reference: "",
+      mode: "reconciliation",
+    }]);
+    const source = ledger.snapshot().sources[0];
+    await ledger.match(source.id, id, 0);
+    const before = ledger.snapshot();
+    const altered = await alteredBackup(
+      await ledger.backup(),
+      "UPDATE sources SET date=? WHERE id=?",
+      ["2025-01-06", source.id],
+    );
+    await expect(ledger.restore(altered)).rejects.toThrow(/backup|reconciliation/i);
+    expect(ledger.snapshot()).toEqual(before);
+  });
+
+  it("rejects a restored account with a parent of a different account type", async () => {
+    ledger = await Ledger.open();
+    const id = await ledger.addAccount({
+      code: "5010",
+      name: "Stationery",
+      type: "Expense",
+      description: "Supplies subaccount",
+      parentId: "supplies",
+    });
+    const before = ledger.snapshot();
+    const altered = await alteredBackup(
+      await ledger.backup(),
+      "UPDATE accounts SET parent_id=? WHERE id=?",
+      ["sales", id],
+    );
+    await expect(ledger.restore(altered)).rejects.toThrow(/backup|parent/i);
     expect(ledger.snapshot()).toEqual(before);
   });
 });

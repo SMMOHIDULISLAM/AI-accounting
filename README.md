@@ -2,7 +2,7 @@
 
 AI Accounting is a local-first bookkeeping workbench for learning and keeping a small double-entry ledger. The browser stores ledger data locally; the optional assistant is a drafting aid that can connect only to a local Ollama installation when the server is explicitly started in local mode.
 
-**Current status:** this is the web foundation, not a no-install F-drive portable package. Browser IndexedDB does not move with a removable disk. The earlier F-drive launcher proposal is superseded. The user selected a native Android APK first, Windows second, and USB backups only; see [ANDROID-PLAN.md](ANDROID-PLAN.md). No native Android project or APK exists yet.
+**Current status:** this is the web foundation, not a no-install F-drive portable package. Browser IndexedDB does not move with a removable disk. The earlier F-drive launcher proposal is superseded. The user selected a native Android APK first, Windows second, and USB backups only; see [ANDROID-PLAN.md](ANDROID-PLAN.md). A separate private Android build task has been created. No native Android source or APK is included in this web repository.
 
 This project is not a CPA/CA certification service, auditor, tax-filing tool, or guaranteed worldwide GAAP/IFRS compliance engine. Country and reporting-framework fields are context for the user's work, not an implementation of every jurisdiction's rules. Reports are draft management reports and do not claim to be a complete statutory financial statement set.
 
@@ -118,6 +118,10 @@ Only account IDs in the request are accepted. Even if a model returns `needsRevi
 Use the guided rules when local AI is unavailable or disabled. Check dates, descriptions, amounts, account heads, tax treatment, recognition timing, and the debit/credit balance before posting. A model can be confidently wrong, and framework-specific recognition, tax, disclosures, policies, comparatives, and jurisdiction-specific filings may require qualified local advice.
 
 Export backups from the app and keep more than one copy in a safe location. Test a restore. Browser storage, downloads, and any computer running Ollama may be accessible to other users or software on that computer. This application does not encrypt the database, backups, or Ollama's local model files.
+
+## Latest storage test evidence
+
+See [SQLITE-BACKUP-TESTS.md](SQLITE-BACKUP-TESTS.md). Twenty-one regression tests pass, plus 16 supplementary backup preflight checks and nine host-SQLite aggregate checks. Two restored-data validation gaps were fixed: mismatched parent account type and reconciliation outside the three-day limit. These checks use synthetic data; they do not verify Android-device SQLite or a physical USB/Android document-provider workflow. Those native checks remain with the dedicated Android build task.
 
 ## Repository and deployment status
 
