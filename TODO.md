@@ -11,3 +11,7 @@
 
 - [ ] Revised portable scope: confirm Windows 10/11 x64, store app-controlled ledger/attachments/runtime/models on the removable disk, no destination dependency installation, no USB autorun, run only on explicit user launch. Current browser IndexedDB build does not satisfy disk portability. Online/mobile sync remains separate unimplemented work. See PORTABLE-ROADMAP.md.
 - [ ] Source reuse: inspect and clone legitimate public accounting engines and official SDKs under their licenses, report exact reuse constraints, and select reviewed components before integration. Proprietary Xero/QuickBooks engine source is not implied by public SDKs.
+
+## Foundation evidence
+
+TypeScript checking and production build pass. Fifteen accounting/storage regressions and four mock-local-AI adapter regressions pass (19 total). A focused browser check confirmed blank report dates show validation and recover without changing records. Public source clones remain outside this repository. Portable executable, bundled model, online publication and mobile sync are not implemented. Private repository transfer is pending owner confirmation.
