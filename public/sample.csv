@@ -1,0 +1,5 @@
+date,description,amount,reference
+2026-11-01,Owner contribution,50000.00,OPEN-001
+2026-11-03,Office rent,-8000.00,RENT-001
+2026-11-05,Customer payment,15000.00,SALE-001
+2026-11-07,Printer ink,-950.00,SUP-001

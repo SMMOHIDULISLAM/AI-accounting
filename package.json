@@ -1,0 +1,38 @@
+{
+  "name": "ai-accounting",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "dev": "tsx server/index.ts",
+    "local": "tsx server/index.ts --local",
+    "build": "vite build && node scripts/copy-wasm.mjs",
+    "start": "tsx server/index.ts --production --local",
+    "check": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "sql.js": "1.13.0",
+    "papaparse": "5.5.3",
+    "express": "4.21.2",
+    "lucide-react": "0.468.0",
+    "@fontsource/inter": "5.2.5",
+    "@fontsource/jetbrains-mono": "5.2.5"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vite": "6.1.0",
+    "tsx": "4.20.5",
+    "vitest": "3.2.4",
+    "fake-indexeddb": "6.2.4",
+    "@types/react": "19.1.16",
+    "@types/react-dom": "19.1.9",
+    "@types/sql.js": "1.4.9",
+    "@types/papaparse": "5.3.16",
+    "@types/express": "4.17.23",
+    "@types/node": "22.18.12"
+  }
+}
