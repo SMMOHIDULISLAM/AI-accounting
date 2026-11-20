@@ -9,7 +9,7 @@
 - [x] Usable web app: responsive Swiss financial workbench, left navigation and contextual explanations, local assets, diagnostics, route manifest and managed Preview runtime. No paid inference or unapproved publication.
 - [x] Handoff: local setup README and AI limitations, type checks/build/focused tests and read-only review, saved checkpoint, private AI-accounting repository created through owner card and transfer completed. Repository is not created until confirmed.
 
-- [ ] Revised portable scope: confirm Windows 10/11 x64, store app-controlled ledger/attachments/runtime/models on the removable disk, no destination dependency installation, no USB autorun, run only on explicit user launch. Current browser IndexedDB build does not satisfy disk portability. Online/mobile sync remains separate unimplemented work. See PORTABLE-ROADMAP.md.
+- [ ] Native Android first: build an APK with on-device SQLite, CSV import, guided/manual accounting, reconciliation and draft statements; USB backup/restore only via user action. Windows second. No run-from-F-drive requirement. Real local AI requires a verified compatible runtime/model; no paid fallback or fake model answers. New mobile workspace and actual native build are not created yet. See ANDROID-PLAN.md.
 - [ ] Source reuse: inspect and clone legitimate public accounting engines and official SDKs under their licenses, report exact reuse constraints, and select reviewed components before integration. Proprietary Xero/QuickBooks engine source is not implied by public SDKs.
 
 ## Foundation evidence

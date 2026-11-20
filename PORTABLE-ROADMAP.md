@@ -1,6 +1,8 @@
-# F-drive portable edition — revised scope
+# F-drive portable edition — superseded proposal
 
-Requested on 20 November 2026 while the first web build was in progress.
+Superseded on 20 November 2026: the user chose a native Android APK first, Windows second, and USB disks for backups only. Do not implement this earlier run-from-F-drive proposal. See ANDROID-PLAN.md for the current direction.
+
+Historical request: requested while the first web build was in progress.
 
 ## Requirements carried forward
 

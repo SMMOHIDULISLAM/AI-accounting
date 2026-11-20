@@ -105,3 +105,7 @@ The user now requires no-install removable-drive operation, user-initiated launc
 ## Source-reuse request during build
 
 The user requests public GitHub accounting/finance code inspection and cloning to accelerate improvements. Review seven relevant accounting engines and official cloud-integration SDKs in parallel, preserve license terms, and keep inspection clones outside the product repository. Do not execute or redistribute inspected sources or claim Xero/QuickBooks proprietary internals are public. Document recommendations in OPEN-SOURCE-REUSE.md before choosing an architecture or transplanting components.
+
+## Latest confirmed direction — native Android APK
+
+The user selected Android first, Windows second, USB backups rather than run-from-disk, and specifically a native APK rather than PWA. ANDROID-PLAN.md is the proposed native implementation approach. The F-drive launcher proposal is superseded. Preserve the current web/private GitHub foundation. Native initialization is unavailable in this bound web workspace; a fresh mobile-capable task requires explicit user authorization before creation. No APK exists yet.

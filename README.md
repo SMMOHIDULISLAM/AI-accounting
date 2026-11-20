@@ -2,7 +2,7 @@
 
 AI Accounting is a local-first bookkeeping workbench for learning and keeping a small double-entry ledger. The browser stores ledger data locally; the optional assistant is a drafting aid that can connect only to a local Ollama installation when the server is explicitly started in local mode.
 
-**Current status:** this is the web foundation, not a no-install F-drive portable package. Browser IndexedDB does not move with a removable disk. The requested file-backed portable Windows edition and future online/mobile synchronization are described in [PORTABLE-ROADMAP.md](PORTABLE-ROADMAP.md) and remain to be built after the revised target is agreed.
+**Current status:** this is the web foundation, not a no-install F-drive portable package. Browser IndexedDB does not move with a removable disk. The earlier F-drive launcher proposal is superseded. The user selected a native Android APK first, Windows second, and USB backups only; see [ANDROID-PLAN.md](ANDROID-PLAN.md). No native Android project or APK exists yet.
 
 This project is not a CPA/CA certification service, auditor, tax-filing tool, or guaranteed worldwide GAAP/IFRS compliance engine. Country and reporting-framework fields are context for the user's work, not an implementation of every jurisdiction's rules. Reports are draft management reports and do not claim to be a complete statutory financial statement set.
 
@@ -121,4 +121,4 @@ Export backups from the app and keep more than one copy in a safe location. Test
 
 ## Repository and deployment status
 
-The private repository https://github.com/SMMOHIDULISLAM/AI-accounting was created through owner authorization, and the saved source transfer was verified and completed on 20 November 2026. The web foundation is available in Preview but has not been published. The no-install F-drive package and online/mobile synchronization remain unfinished. No paid hosting, cloud ledger, API purchase, billing integration, or cloud inference is required for the current local-run source version.
+The private repository https://github.com/SMMOHIDULISLAM/AI-accounting was created through owner authorization, and the saved source transfer was verified and completed on 20 November 2026. The web foundation is available in Preview but has not been published. Native Android, subsequent Windows packaging and online/mobile synchronization remain unfinished. The earlier F-drive runtime proposal has been replaced by USB backups only. No paid hosting, cloud ledger, API purchase, billing integration, or cloud inference is required for the current local-run source version.
