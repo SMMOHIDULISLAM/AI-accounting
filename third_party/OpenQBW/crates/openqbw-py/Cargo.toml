@@ -1,0 +1,25 @@
+[package]
+name = "openqbw-py"
+version.workspace = true
+edition = "2021"
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+authors.workspace = true
+keywords = ["quickbooks", "qbw", "python", "accounting"]
+categories = ["api-bindings"]
+description = "Python bindings for openqbw"
+# Shipped to PyPI as a wheel built by maturin, never to crates.io.
+publish = false
+# No workspace lints inheritance: pyo3 macros generate unsafe code,
+# which conflicts with workspace `unsafe_code = forbid`.
+
+[lib]
+name = "_openqbw"
+crate-type = ["cdylib"]
+
+[dependencies]
+openqbw_rs = { package = "openqbw", path = "../openqbw", version = "0.2.0" }
+pyo3 = { version = "0.30", features = ["extension-module", "abi3-py310"] }

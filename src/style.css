@@ -1348,3 +1348,26 @@ code {
     transition: none !important;
   }
 }
+.share-dialog {
+  border: 0;
+  max-width: calc(100vw - 24px);
+  margin: auto;
+}
+.share-dialog::backdrop { background: #23352c77; }
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--teal);
+  color: white;
+  padding: 11px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+}
+.report-controls { flex-wrap: wrap; }
+.message-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.integration-panel { max-width: 1100px; }
+.integration-check { display: flex; align-items: flex-start; gap: 10px; }
+.integration-check input { width: auto; margin-top: 4px; }
+.integration-panel dd { overflow-wrap: anywhere; }

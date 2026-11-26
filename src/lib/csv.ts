@@ -180,7 +180,10 @@ export function probableDuplicates(
 function safeCell(value: string | number): string {
   const text = String(value);
   const formulaSafe =
-    typeof value === "string" && /^[=+\-@]/.test(text) ? `'${text}` : text;
+    typeof value === "string" &&
+    (/^[\t\r\n]/.test(text) || /^\s*[=+\-@]/.test(text)) &&
+    !/^-\d+(?:\.\d+)?$/.test(text)
+      ? `'${text}` : text;
   return /[",\r\n]/.test(formulaSafe)
     ? `"${formulaSafe.replace(/"/g, '""')}"`
     : formulaSafe;

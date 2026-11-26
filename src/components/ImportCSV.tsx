@@ -24,6 +24,7 @@ import { parseMoney, report } from "../lib/accounting";
 import { parseCSV, mapCSV, exportCSV } from "../lib/csv";
 import type { Snapshot, Line, Journal, SourceRow, Account } from "../lib/types";
 import { today, saveFile } from "../components/utils";
+import { minorUnitsText } from "../lib/money";
 export default function ImportCSV({
   existing,
   close,
@@ -211,7 +212,7 @@ export default function ImportCSV({
                   <tr key={i}>
                     <td>{r.date}</td>
                     <td>{r.description}</td>
-                    <td>{(r.amount / 100).toFixed(2)}</td>
+                    <td>{minorUnitsText(r.amount)}</td>
                   </tr>
                 ))}
               </tbody>

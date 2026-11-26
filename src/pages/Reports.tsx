@@ -24,6 +24,9 @@ import { parseMoney, report, isValidDate } from "../lib/accounting";
 import { parseCSV, mapCSV, exportCSV } from "../lib/csv";
 import type { Snapshot, Line, Journal, SourceRow, Account } from "../lib/types";
 import { today, saveFile } from "../components/utils";
+import { minorUnitsText } from "../lib/money";
+import { reportMessage } from "../lib/whatsapp";
+import WhatsAppShare from "../components/WhatsAppShare";
 export default function Reports({
   data,
   money,
@@ -49,7 +52,17 @@ export default function Reports({
         <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
       </div>
     );
-  const r = report(data, from, to);
+  let r: ReturnType<typeof report>;
+  try {
+    r = report(data, from, to);
+  } catch (error) {
+    return (
+      <p className="alert error" role="alert">
+        Report unavailable: {(error as Error).message}. Records and backup
+        controls remain available.
+      </p>
+    );
+  }
   const rows =
     tab === "Profit & loss"
       ? [
@@ -83,8 +96,8 @@ export default function Reports({
           r.trial.map((x) => [
             x.account.code,
             x.account.name,
-            x.debit / 100,
-            x.credit / 100,
+            minorUnitsText(x.debit),
+            minorUnitsText(x.credit),
           ]),
         ),
       );
@@ -102,8 +115,8 @@ export default function Reports({
                 j.date,
                 j.description,
                 data.accounts.find((a) => a.id === l.accountId)?.name || "",
-                l.debit / 100,
-                l.credit / 100,
+                minorUnitsText(l.debit),
+                minorUnitsText(l.credit),
               ]),
             ),
         ),
@@ -121,7 +134,7 @@ export default function Reports({
                 s.date >= from &&
                 s.date <= to,
             )
-            .map((s) => [s.date, s.description, s.amount / 100]),
+            .map((s) => [s.date, s.description, minorUnitsText(s.amount)]),
         ),
       );
     else
@@ -129,7 +142,7 @@ export default function Reports({
         tab + ".csv",
         exportCSV(
           ["Item", "Amount"],
-          rows.map((x) => [x[0] as string, (x[1] as number) / 100]),
+          rows.map((x) => [x[0] as string, minorUnitsText(x[1] as number)]),
         ),
       );
   };
@@ -156,6 +169,10 @@ export default function Reports({
         <button className="secondary" onClick={exportRows}>
           <Download size={16} /> Export CSV
         </button>
+        <WhatsAppShare
+          key={`${from}:${to}`}
+          message={reportMessage(data, from, to)}
+        />
       </div>
       <div className="tabs">
         {[

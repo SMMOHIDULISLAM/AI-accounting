@@ -1,0 +1,289 @@
+{
+  "created": "2026-11-27",
+  "sources": [
+    {
+      "name": "Ledger Reborn",
+      "repository": "https://github.com/lxistired/ledger-reborn",
+      "commit": "d7f6b8a1f4ad6c4ae8b10100d1c93cf15940c21d",
+      "license": "MIT",
+      "directory": "third_party/ledger-reborn",
+      "modified": false,
+      "files": [
+        {
+          "path": "third_party/ledger-reborn/ENGINE_README.md",
+          "sha256": "612bf1edbd51f5b368f55a29379df449d30d4751438d5c40d8bf719456a06ea7"
+        },
+        {
+          "path": "third_party/ledger-reborn/fixtures/bank.csv",
+          "sha256": "58f79298b6c503004076ae5d93aeea569c9cc1fb034d9cf8299155a130fecb4e"
+        },
+        {
+          "path": "third_party/ledger-reborn/fixtures/expected.json",
+          "sha256": "f659c025156995f1e7af547a336908429594ec7d58dba441826c43420ec45d25"
+        },
+        {
+          "path": "third_party/ledger-reborn/fixtures/FROZEN.sha256",
+          "sha256": "0a1c19bddf90390a23038e482e3ab167628c1acc63e9757808bfa910631b8458"
+        },
+        {
+          "path": "third_party/ledger-reborn/fixtures/scenario.json",
+          "sha256": "34f99ff8da23f6897436574e38942a65ec142026faa0fbe0db1d9f7b681a785e"
+        },
+        {
+          "path": "third_party/ledger-reborn/ledger.py",
+          "sha256": "1678d9d73fbfaf53a12ba3a2e1d74aecaa8e19174a3bb6c705eba10f0c2bdfaf"
+        },
+        {
+          "path": "third_party/ledger-reborn/LICENSE",
+          "sha256": "4f824e0b9b3e4b895762086a7df2a8c8f4542b1c1e4e9a5dc1b935234870cb35"
+        },
+        {
+          "path": "third_party/ledger-reborn/tests/test_acceptance.py",
+          "sha256": "d06b7b9bda3d1f946fe4b35a30641039f684a6b0a700b25faadb3c873b97cad5"
+        },
+        {
+          "path": "third_party/ledger-reborn/tests/test_annual_trial_balance.py",
+          "sha256": "3d7e7e21531d2edb9a4598ad94fdf51c2cabec2a5695a895f806db8cda5859ac"
+        },
+        {
+          "path": "third_party/ledger-reborn/tests/test_earnings_presentation.py",
+          "sha256": "e86853265664df73b0e9b389282dbd7e87c7c33a42ca95b256e8bc095e6da801"
+        }
+      ]
+    },
+    {
+      "name": "OpenQBW",
+      "repository": "https://github.com/Sigilweaver/OpenQBW",
+      "commit": "f57bb213cf0f287a4da93f23498e6e5882798edf",
+      "license": "Apache-2.0",
+      "directory": "third_party/OpenQBW",
+      "modified": false,
+      "files": [
+        {
+          "path": "third_party/OpenQBW/Cargo.lock",
+          "sha256": "2bdb08bf937988a2f7dea0f9989c3952b97b1dfa01db67732b5b8e94907cf7dc"
+        },
+        {
+          "path": "third_party/OpenQBW/Cargo.toml",
+          "sha256": "4d6491b3e08f7f28d0ad8dcd333176b30aa5291443cbd571dbfab8145eaecffd"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/Cargo.toml",
+          "sha256": "2ac171bb4aeae9016d00c3a8bd21c0ca7916e824e0858dc013f3122b0db1b69b"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/LICENSE",
+          "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/NOTICE",
+          "sha256": "83f7f59f055aa652e59291743e7f18c97164772e67f0fda188246ef3f61d8819"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/attribution_content.rs",
+          "sha256": "a9ffe788c7d5898a38d0cd4f4a4dc689de1bd76db4144b38078481a3bf51b0e7"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/attribution_schema.rs",
+          "sha256": "26552898d53dde18cf9311ab7c0e2c8c8e276f0dd3885137b751a09b91ad71f8"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/bv_recovery.rs",
+          "sha256": "a8c1db33d2e963c579ebf15ae5b9b0f50130e7559a58635f824c00bd1f3780c8"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/date.rs",
+          "sha256": "772b7a30ad39e9aec82cb2caced5797d417b9405e6629a4227f36080c42e71fe"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/decimal.rs",
+          "sha256": "0329d6d859ad6f9b3a281ae673cb49c85bda2cf0e22566fa8b8b1a7021a89b0a"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/decode.rs",
+          "sha256": "3c3b9c05bf4a9f80b7acb1ec99097221164653e20745cb8e0373c3be00dd48bb"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/diagnostics.rs",
+          "sha256": "02659603b8f4115abc384b7e8f71aeff5b2204ba6ffca1caa0c0c38578bb08d6"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/error.rs",
+          "sha256": "47b73da6c181c54574e76e0e3690624c153417c19b4124c8c09bbe9dbb0b3e8a"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/fkgraph.rs",
+          "sha256": "6c270963d9cdcc98a93b641054ee28d3d2aab32b5131bc34f05d44b275128f56"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/lib.rs",
+          "sha256": "a0c5f6a43384389ae826ad416e8f550abac7476b184fd9af47302adc17eccdf7"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/lineitem.rs",
+          "sha256": "740a6d99c1186c2638b66d97a4831563efb0e1c531117434285defaa70fb4fd0"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/nullability.rs",
+          "sha256": "6e6b1723367c734c59a2bcc1f3e84072cbafd7a11312a39a4399a22f6d4d1cea"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/opaque.rs",
+          "sha256": "ea1709dfb2a34c646d0de411bb1cd89521ec86d1d3f1d80b40b63fef79712e68"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/open.rs",
+          "sha256": "8063e0fe9681f462a9cf1487fd58a3c413056c0f926639bd557161b45fbd1a3b"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/owner_bridge.rs",
+          "sha256": "395362b193def0ae8a2f37b82b2aa4adfe7a4280aa6f93ef3e3934fe4b98cf6a"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/page_attribution.rs",
+          "sha256": "05c88adbbf888a197c36ac8dad22a610cb385d4938f52c13edec67ff7a6ea965"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/qbb.rs",
+          "sha256": "6e4db67bed31ef2cb031c852afa3a0dc29c6f34c3e34df512182d54bba5ad260"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/reader.rs",
+          "sha256": "ea7b62f87a6f2e61e8fa96ce8c45690ff59005474b41f631919488d4dc70601c"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/scan.rs",
+          "sha256": "311fb7fb1fe7819cedda556a3f2eb838f4b54d533de1f2a347bba8fb7dda70b7"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/syscolumn.rs",
+          "sha256": "61e8db10322fe5462d8fc03b83012a877373a168a6809e95e7ecd62d0d0777b9"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/sysindex.rs",
+          "sha256": "f3e05a279a88aa5530972de6e5d108754474d88e5a1c52e31c8ed2edd9ad4f22"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/sysobject.rs",
+          "sha256": "5538cae6f063aecbda82bb02eabdee1bbb87cae8c8de3495c12551873120442f"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/systable.rs",
+          "sha256": "bee5c40763e821a5feb76c51a3d58e1a30a415dedab52533f9605dad16d1c235"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/testutil.rs",
+          "sha256": "dc4ec8a9c78f2b6c27b1b79effbc7e2d5daf8c6b8acab1ff94f5c3d80d4f7845"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/src/transaction_header.rs",
+          "sha256": "88c9922ffee126e2d750cc1bbc83cb67b2480ff09ba0100f38a02f885d1326df"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/tests/common/mod.rs",
+          "sha256": "ad7df62b10ee708e8d51ba9d20d41ab130bfb17d1217037da6a076b513124391"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/tests/data/synthetic-bad-record.qbw",
+          "sha256": "9e4fbcab94a599fc9b9f99a220a0d0d18251da7c93c0c610991802add0aac362"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/tests/data/synthetic-counts.qbw",
+          "sha256": "adc81101bfdfebfadf9229c25fa9635335fa69354892a0ebca1213582dbdcd7d"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/tests/data/synthetic.qbw",
+          "sha256": "896ebae027f188e441d0f5ee17c45656e5300a74958088af0bf1a6527494fe96"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw/tests/reader.rs",
+          "sha256": "57dd3f56d1c9d894125f173534dc9220d9b5f61e06473095a42735b09374f1ee"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw-cli/Cargo.toml",
+          "sha256": "d11765f77fd5cd1513497b4aeabdc8870c6ff9dc3a75bafaa68bf9e674fa1259"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw-cli/LICENSE",
+          "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw-cli/NOTICE",
+          "sha256": "83f7f59f055aa652e59291743e7f18c97164772e67f0fda188246ef3f61d8819"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw-cli/src/main.rs",
+          "sha256": "6b61b8d33c0d6fc9c917642815f28a8048525bd7b30ebc269fad4079bc7a1560"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw-cli/src/outfile.rs",
+          "sha256": "4da9d8953063d2717e102a382b1ce3bf1bce233c6813e1af9414dbb0550e4597"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw-cli/tests/cli.rs",
+          "sha256": "3de26bb3de929236764e8a09a57f24c86f849a024dc20e052da412f1493e616f"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw-py/Cargo.toml",
+          "sha256": "99fa40c5c6bce732fc093cd31e8cdf08b100699f16d8c1b8cc978f930da45150"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw-py/LICENSE",
+          "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw-py/NOTICE",
+          "sha256": "83f7f59f055aa652e59291743e7f18c97164772e67f0fda188246ef3f61d8819"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw-py/pyproject.toml",
+          "sha256": "9ff9d5d7bf89005b78d609877819c54d45e192be7553d12be35e6fd15a0e955a"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw-py/python/openqbw/py.typed",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw-py/python/openqbw/_errors.py",
+          "sha256": "e1110faa4c17fb737175d9fc22f77641288f444a9c16176e8d341a6f210e01ee"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw-py/python/openqbw/_openqbw.pyi",
+          "sha256": "fd8e3fb61bad404d52e3a1b9c124f53f74e226859b71240a8f2a0f446c37ab86"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw-py/python/openqbw/__init__.py",
+          "sha256": "c0fbcdf461d9b763ab38961fb789473af6208be7feb008c2dcabde3d42c7c3c5"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw-py/README.md",
+          "sha256": "6c735f82f474c2e0f0c8f348d89891fe2b53fd54ac46b290066aecc522f1d838"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw-py/src/lib.rs",
+          "sha256": "0cba2c1644a5d73ca7b715c6e004129c4b97d90116932862073a341c0195460a"
+        },
+        {
+          "path": "third_party/OpenQBW/crates/openqbw-py/tests/test_openqbw.py",
+          "sha256": "dcf7e7668c123a0925d954928feecca3378da4c83565ce49a4ded0b3dedca82c"
+        },
+        {
+          "path": "third_party/OpenQBW/LICENSE",
+          "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+        },
+        {
+          "path": "third_party/OpenQBW/NOTICE",
+          "sha256": "83f7f59f055aa652e59291743e7f18c97164772e67f0fda188246ef3f61d8819"
+        },
+        {
+          "path": "third_party/OpenQBW/README.md",
+          "sha256": "beed98dd05d17f98c174d3f008abe84ed74f0115091496efcbe6214233c1b9a1"
+        },
+        {
+          "path": "third_party/OpenQBW/SPECIFICATION.md",
+          "sha256": "a72bb92d5ef1b4fa7598c4fb963b5761cbf356f9b7a2c363fa6d6be77e99b9f4"
+        }
+      ]
+    }
+  ]
+}

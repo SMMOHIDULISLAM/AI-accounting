@@ -24,6 +24,7 @@ import { parseMoney, report } from "../lib/accounting";
 import { parseCSV, mapCSV, exportCSV } from "../lib/csv";
 import type { Snapshot, Line, Journal, SourceRow, Account } from "../lib/types";
 import { today, saveFile } from "../components/utils";
+import { minorUnitsText } from "../lib/money";
 export default function JournalEditor({
   data,
   source,
@@ -39,7 +40,7 @@ export default function JournalEditor({
   close: () => void;
   save: (v: any) => Promise<void>;
 }) {
-  const amount = Math.abs(source?.amount || 0) / 100;
+  const amount = minorUnitsText(Math.abs(source?.amount || 0));
   const [date, setDate] = useState(existing?.date || source?.date || today());
   const [description, setDescription] = useState(
     existing?.description || source?.description || "",
@@ -50,18 +51,18 @@ export default function JournalEditor({
   const [lines, setLines] = useState(
     existing?.lines.map((l) => ({
       accountId: l.accountId,
-      debit: l.debit ? (l.debit / 100).toFixed(2) : "",
-      credit: l.credit ? (l.credit / 100).toFixed(2) : "",
+      debit: l.debit ? minorUnitsText(l.debit) : "",
+      credit: l.credit ? minorUnitsText(l.credit) : "",
     })) || [
       {
         accountId: "bank",
-        debit: source && source.amount > 0 ? amount.toFixed(2) : "",
-        credit: source && source.amount < 0 ? amount.toFixed(2) : "",
+        debit: source && source.amount > 0 ? amount : "",
+        credit: source && source.amount < 0 ? amount : "",
       },
       {
         accountId: preset || "expense",
-        debit: source && source.amount < 0 ? amount.toFixed(2) : "",
-        credit: source && source.amount > 0 ? amount.toFixed(2) : "",
+        debit: source && source.amount < 0 ? amount : "",
+        credit: source && source.amount > 0 ? amount : "",
       },
     ],
   );

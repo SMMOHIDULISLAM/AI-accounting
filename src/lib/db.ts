@@ -9,6 +9,7 @@ import type {
   SourceRow,
 } from "./types";
 import { assertDate, isValidDate, linesBalanced } from "./accounting";
+import type { ExternalDraft } from "./external-books";
 
 type SQLDatabase = any;
 type SQLModule = any;
@@ -270,14 +271,17 @@ async function writeBytes(bytes: Uint8Array): Promise<void> {
   });
 }
 
-async function acquireLifetimeLock(): Promise<() => void> {
+async function acquireLifetimeLock(): Promise<() => Promise<void>> {
+  // Node now also provides Web Locks. Host ledgers have independent storage;
+  // the cross-tab lock belongs only to browser IndexedDB connections.
+  if (!isBrowserRuntime) return async () => undefined;
   const locks = (globalThis as any).navigator?.locks;
   if (!locks?.request) {
     if (isBrowserRuntime)
       throw new Error(
         "Web Locks are required for browser multi-tab ledger safety",
       );
-    return () => undefined;
+    return async () => undefined;
   }
   let releaseHold!: () => void;
   let resolveAcquired!: () => void;
@@ -289,22 +293,24 @@ async function acquireLifetimeLock(): Promise<() => void> {
   const hold = new Promise<void>((resolve) => {
     releaseHold = resolve;
   });
-  void locks
-    .request(
-      "ai-accounting-ledger-lifetime",
-      { mode: "exclusive", ifAvailable: true },
-      async (lock: any) => {
-        if (!lock) {
-          rejectAcquired(new Error("Another browser tab owns the ledger"));
-          return;
-        }
-        resolveAcquired();
-        await hold;
-      },
-    )
-    .catch(rejectAcquired);
+  const request = locks.request(
+    "ai-accounting-ledger-lifetime",
+    { mode: "exclusive", ifAvailable: true },
+    async (lock: any) => {
+      if (!lock) {
+        rejectAcquired(new Error("Another browser tab owns the ledger"));
+        return;
+      }
+      resolveAcquired();
+      await hold;
+    },
+  );
+  void request.catch(rejectAcquired);
   await acquired;
-  return releaseHold;
+  return async () => {
+    releaseHold();
+    await request;
+  };
 }
 
 function createSchema(db: SQLDatabase): void {
@@ -349,11 +355,13 @@ function seed(db: SQLDatabase): void {
     ["My ledger", "BDT", "Bangladesh", "General accrual bookkeeping", 1],
   );
 }
-function checkSchema(db: SQLDatabase): void {
+function checkSchema(db: SQLDatabase, SQL: SQLModule): void {
   enableForeignKeys(db);
   const integrity = asRows(db, "PRAGMA integrity_check")[0]?.integrity_check;
   if (integrity !== "ok")
-    throw new Error(`SQLite integrity check failed: ${integrity || "unknown error"}`);
+    throw new Error(
+      `SQLite integrity check failed: ${integrity || "unknown error"}`,
+    );
   if (asRows(db, "PRAGMA foreign_key_check").length)
     throw new Error("SQLite foreign-key check failed");
   const tables = new Set(
@@ -373,6 +381,27 @@ function checkSchema(db: SQLDatabase): void {
     if (!tables.has(table)) throw new Error("Incompatible ledger database");
   if (scalar(db, "SELECT value FROM meta WHERE key='schema_version'") !== "1")
     throw new Error("Incompatible ledger schema version");
+
+  // Data validation alone cannot make an altered schema safe. Extra triggers
+  // could silently edit posted records on a later ordinary save. Require the
+  // canonical v1 structure, including its checks and uniqueness constraints.
+  const structure = (database: SQLDatabase) =>
+    asRows(
+      database,
+      "SELECT type,name,sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name",
+    ).map((row) => [
+      row.type,
+      row.name,
+      String(row.sql).replace(/\s+/g, " ").trim(),
+    ]);
+  const reference = new SQL.Database();
+  try {
+    createSchema(reference);
+    if (JSON.stringify(structure(db)) !== JSON.stringify(structure(reference)))
+      throw new Error("Incompatible ledger schema structure");
+  } finally {
+    reference.close();
+  }
 
   const settingsRows = asRows(
     db,
@@ -422,13 +451,18 @@ function checkSchema(db: SQLDatabase): void {
       row.parent_id !== null &&
       (!accountIds.has(row.parent_id) ||
         row.parent_id === row.id ||
-        accountRows.find((parent) => parent.id === row.parent_id)?.type !== row.type)
+        accountRows.find((parent) => parent.id === row.parent_id)?.type !==
+          row.type)
     )
       throw new Error("Invalid account parent");
   }
   for (const seeded of SEEDED_ACCOUNTS) {
     const account = accountRows.find((row) => row.id === seeded.id);
-    if (!account || account.code !== seeded.code || account.type !== seeded.type)
+    if (
+      !account ||
+      account.code !== seeded.code ||
+      account.type !== seeded.type
+    )
       throw new Error(`Required account is missing: ${seeded.id}`);
   }
   for (const row of accountRows) {
@@ -475,16 +509,24 @@ function checkSchema(db: SQLDatabase): void {
     )
       throw new Error("Invalid ledger line");
   }
-  const badPosted = asRows(
-    db,
-    `SELECT j.id FROM journals j JOIN (SELECT journal_id, SUM(debit) d, SUM(credit) c FROM lines GROUP BY journal_id) x ON x.journal_id=j.id WHERE j.status='posted' AND (x.d IS NULL OR x.d=0 OR x.d<>x.c)`,
-  );
-  const postedWithoutLines = asRows(
-    db,
-    "SELECT j.id FROM journals j LEFT JOIN lines l ON l.journal_id=j.id WHERE j.status='posted' GROUP BY j.id HAVING COUNT(l.journal_id)=0",
-  );
-  if (badPosted.length || postedWithoutLines.length)
-    throw new Error("Ledger contains an unbalanced posted journal");
+  // Validate sums in the same safe integer range used for live posting.
+  // SQLite SUM can exceed JavaScript's exact range even when each line fits.
+  for (const journal of journalRows) {
+    if (journal.status !== "posted") continue;
+    const lines = asRows(
+      db,
+      "SELECT account_id,debit,credit FROM lines WHERE journal_id=?",
+      [journal.id],
+    ).map((line) => ({
+      accountId: line.account_id,
+      debit: Number(line.debit),
+      credit: Number(line.credit),
+    }));
+    if (!linesBalanced(lines))
+      throw new Error(
+        "Ledger contains an unbalanced or oversized posted journal",
+      );
+  }
 
   const seenMatchedLines = new Set<string>();
   for (const source of asRows(
@@ -534,7 +576,9 @@ function checkSchema(db: SQLDatabase): void {
       "SELECT account_id,debit,credit FROM lines WHERE journal_id=? AND line_index=?",
       [matchedJournalId, lineIndex],
     )[0];
-    const matchedJournal = journalRows.find((journal) => journal.id === matchedJournalId);
+    const matchedJournal = journalRows.find(
+      (journal) => journal.id === matchedJournalId,
+    );
     if (
       !matchedJournal ||
       matchedJournal.status !== "posted" ||
@@ -551,14 +595,14 @@ function checkSchema(db: SQLDatabase): void {
 export class Ledger {
   private db: SQLDatabase;
   private SQL: SQLModule;
-  private releaseLock: () => void;
+  private releaseLock: () => Promise<void>;
   private mutationQueue: Promise<void> = Promise.resolve();
   private closed = false;
 
   private constructor(
     SQL: SQLModule,
     db: SQLDatabase,
-    releaseLock: () => void,
+    releaseLock: () => Promise<void>,
   ) {
     this.SQL = SQL;
     this.db = db;
@@ -585,10 +629,10 @@ export class Ledger {
         await writeBytes(exportDatabase(db));
       }
       enableForeignKeys(db);
-      checkSchema(db);
+      checkSchema(db, SQL);
       return new Ledger(SQL, db, releaseLock);
     } catch (error) {
-      releaseLock();
+      await releaseLock();
       throw error;
     }
   }
@@ -626,7 +670,10 @@ export class Ledger {
         throw error;
       }
     });
-    this.mutationQueue = operation.then(() => undefined, () => undefined);
+    this.mutationQueue = operation.then(
+      () => undefined,
+      () => undefined,
+    );
     return operation;
   }
   private journal(id: string): Journal | undefined {
@@ -637,7 +684,8 @@ export class Ledger {
     validateDateAndText(input.date, input.description);
     const id = input.id || newId("journal");
     const ids = this.accountIds();
-    if (!input.lines.length) throw new Error("A journal needs at least one line");
+    if (!input.lines.length)
+      throw new Error("A journal needs at least one line");
     input.lines.forEach((line) => validateLine(line, ids));
     return id;
   }
@@ -773,17 +821,28 @@ export class Ledger {
       ] as const) {
         const value = next[field];
         if (typeof value !== "string" || !value.trim() || value.length > max)
-          throw new Error(`${field[0].toUpperCase()}${field.slice(1)} is required and must be reasonably sized`);
+          throw new Error(
+            `${field[0].toUpperCase()}${field.slice(1)} is required and must be reasonably sized`,
+          );
       }
-      if (!SUPPORTED_CURRENCIES.includes(next.currency as (typeof SUPPORTED_CURRENCIES)[number]))
-        throw new Error("Currency must be one of BDT, USD, GBP, EUR, CAD, INR, or AUD");
-      if (typeof next.guidance !== "boolean") throw new Error("Guidance must be boolean");
+      if (
+        !SUPPORTED_CURRENCIES.includes(
+          next.currency as (typeof SUPPORTED_CURRENCIES)[number],
+        )
+      )
+        throw new Error(
+          "Currency must be one of BDT, USD, GBP, EUR, CAD, INR, or AUD",
+        );
+      if (typeof next.guidance !== "boolean")
+        throw new Error("Guidance must be boolean");
       const hasRecords = Boolean(
         scalar(this.db, "SELECT COUNT(*) AS value FROM journals") ||
-          scalar(this.db, "SELECT COUNT(*) AS value FROM sources"),
+        scalar(this.db, "SELECT COUNT(*) AS value FROM sources"),
       );
       if (hasRecords && next.currency !== current.currency)
-        throw new Error("Currency cannot be changed after journals or sources exist");
+        throw new Error(
+          "Currency cannot be changed after journals or sources exist",
+        );
       this.db.run(
         "UPDATE settings SET name=?,currency=?,country=?,framework=?,guidance=? WHERE id=1",
         [
@@ -807,6 +866,116 @@ export class Ledger {
     return id;
   }
 
+  /** Idempotent intake: replay after a lost acknowledgment cannot duplicate or
+   * rewrite a draft (or a journal that the user has already posted). */
+  async importWhatsAppDraft(
+    messageId: string,
+    currency: string,
+    input: Omit<SaveDraftInput, "id">,
+  ): Promise<string> {
+    if (
+      typeof messageId !== "string" ||
+      !messageId.trim() ||
+      messageId.length > 512
+    )
+      throw new Error("Invalid WhatsApp message ID");
+    const id = `whatsapp:${messageId}`;
+    const draft = { ...input, id, reference: messageId };
+    this.prepareDraft(draft);
+    await this.persistMutation(() => {
+      if (this.snapshot().settings.currency !== currency)
+        throw new Error(
+          "The WhatsApp message currency must match this ledger. No currency conversion is applied.",
+        );
+      if (this.journal(id)) return;
+      this.saveDraftInTransaction(draft, id);
+    });
+    return id;
+  }
+
+  async importExternalDrafts(
+    format: string,
+    bookId: string,
+    currency: string,
+    entries: ExternalDraft[],
+  ): Promise<{ imported: number; skipped: number }> {
+    if (!["ledger-reborn", "accounting-sqlite"].includes(format))
+      throw Error("Unsupported journal-import format");
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}$/.test(bookId))
+      throw Error(
+        "Use a stable source book ID of 1–80 letters, digits, dots, underscores or hyphens",
+      );
+    if (!entries.length || entries.length > 500)
+      throw Error("Import between 1 and 500 journals per batch");
+    const ids = new Set<string>();
+    const drafts = await Promise.all(
+      entries.map(async (entry) => {
+        if (
+          typeof entry.sourceId !== "string" ||
+          !entry.sourceId.trim() ||
+          entry.sourceId.length > 200 ||
+          ids.has(entry.sourceId)
+        )
+          throw Error("Invalid or duplicate source journal ID");
+        ids.add(entry.sourceId);
+        if (entry.description.length > 2000 || !linesBalanced(entry.lines))
+          throw Error(
+            "Source journal must have a bounded description and balanced safe totals",
+          );
+        const id = `external:${format}:${bookId}:${encodeURIComponent(entry.sourceId)}`;
+        const canonical = {
+          date: entry.date,
+          description: entry.description,
+          currency,
+          lines: entry.lines
+            .slice()
+            .sort(
+              (a, b) =>
+                a.accountId.localeCompare(b.accountId) ||
+                a.debit - b.debit ||
+                a.credit - b.credit,
+            ),
+        };
+        const digest = await globalThis.crypto.subtle.digest(
+          "SHA-256",
+          new TextEncoder().encode(JSON.stringify(canonical)),
+        );
+        const hash = [...new Uint8Array(digest)]
+          .map((byte) => byte.toString(16).padStart(2, "0"))
+          .join("");
+        const input = { ...entry, id, reference: `${id}#${hash}` };
+        this.prepareDraft(input);
+        return input;
+      }),
+    );
+    let imported = 0,
+      skipped = 0;
+    await this.persistMutation(() => {
+      if (currency !== this.snapshot().settings.currency)
+        throw Error(
+          "Source and ledger currencies must match; no conversion is applied",
+        );
+      for (const draft of drafts) {
+        const existing = this.journal(draft.id);
+        if (existing) {
+          if (existing.reference !== draft.reference)
+            throw Error(
+              `Source journal ${draft.sourceId} changed or its mapping conflicts with an earlier import`,
+            );
+          skipped++;
+          continue;
+        }
+        this.saveDraftInTransaction(draft, draft.id);
+        imported++;
+      }
+      this.db.run("INSERT INTO audit(date,action) VALUES (?,?)", [
+        now(),
+        `Imported ${imported} ${format} drafts from ${bookId}; skipped ${skipped} existing IDs`,
+      ]);
+    });
+    return { imported, skipped };
+  }
+
   async saveDraftFromSource(
     sourceId: string,
     input: SaveDraftInput,
@@ -828,10 +997,7 @@ export class Ledger {
         throw new Error("Journal is already linked to a source row");
 
       this.saveDraftInTransaction(input, id);
-      this.db.run("UPDATE sources SET journal_id=? WHERE id=?", [
-        id,
-        sourceId,
-      ]);
+      this.db.run("UPDATE sources SET journal_id=? WHERE id=?", [id, sourceId]);
       this.db.run("INSERT INTO audit(date,action) VALUES (?,?)", [
         now(),
         `Linked source ${sourceId} to journal ${id}`,
@@ -942,8 +1108,9 @@ export class Ledger {
       if (source.journalId || source.matchedLine)
         throw new Error("Source row is already linked");
       if (
-        asRows(this.db, "SELECT id FROM sources WHERE journal_id=?", [journalId])
-          .length
+        asRows(this.db, "SELECT id FROM sources WHERE journal_id=?", [
+          journalId,
+        ]).length
       )
         throw new Error("Journal is already linked to a source row");
       this.db.run("UPDATE sources SET journal_id=? WHERE id=?", [
@@ -1025,7 +1192,14 @@ export class Ledger {
   }
 
   async backup(): Promise<Uint8Array> {
-    return this.backupBytes();
+    // A snapshot is a queued operation: include earlier writes, exclude later
+    // writes, and never export halfway through a persistence operation.
+    const operation = this.mutationQueue.then(() => this.backupBytes());
+    this.mutationQueue = operation.then(
+      () => undefined,
+      () => undefined,
+    );
+    return operation;
   }
 
   async restore(bytes: Uint8Array): Promise<void> {
@@ -1036,7 +1210,7 @@ export class Ledger {
       let candidate: SQLDatabase | undefined;
       try {
         candidate = new this.SQL.Database(new Uint8Array(bytes));
-        checkSchema(candidate);
+        checkSchema(candidate, this.SQL);
       } catch (error) {
         candidate?.close();
         throw new Error(
@@ -1059,7 +1233,10 @@ export class Ledger {
         throw error;
       }
     });
-    this.mutationQueue = operation.then(() => undefined, () => undefined);
+    this.mutationQueue = operation.then(
+      () => undefined,
+      () => undefined,
+    );
     return operation;
   }
 
@@ -1081,32 +1258,22 @@ export class Ledger {
     const code = input.code.trim();
     const name = input.name.trim();
     const description = input.description;
-    if (!code || !name)
-      throw new Error("Account code and name are required");
+    if (!code || !name) throw new Error("Account code and name are required");
     if (code.length > 50 || name.length > 200 || description.length > 1000)
       throw new Error("Account code, name, or description is too long");
     const id = newId("account");
     await this.persistMutation(() => {
       if (input.parentId) {
-        const parent = asRows(
-          this.db,
-          "SELECT type FROM accounts WHERE id=?",
-          [input.parentId],
-        )[0];
+        const parent = asRows(this.db, "SELECT type FROM accounts WHERE id=?", [
+          input.parentId,
+        ])[0];
         if (!parent) throw new Error("Parent account not found");
         if (parent.type !== input.type)
           throw new Error("Parent account must have the same type");
       }
       this.db.run(
         "INSERT INTO accounts(id,code,name,type,description,parent_id) VALUES (?,?,?,?,?,?)",
-        [
-          id,
-          code,
-          name,
-          input.type,
-          description,
-          input.parentId || null,
-        ],
+        [id, code, name, input.type, description, input.parentId || null],
       );
       this.db.run("INSERT INTO audit(date,action) VALUES (?,?)", [
         now(),
@@ -1122,7 +1289,7 @@ export class Ledger {
     if (this.closed) return;
     this.closed = true;
     this.db.close();
-    this.releaseLock();
+    await this.releaseLock();
   }
 }
 
