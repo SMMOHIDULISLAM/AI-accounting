@@ -1,4 +1,5 @@
 import type { Account, AccountType, Line, Snapshot } from "./types";
+import { minorUnitsText } from "./money";
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -37,11 +38,22 @@ export function parseMoney(input: string): number {
 
 export function formatMoney(cents: number, currency = "BDT"): string {
   if (!Number.isSafeInteger(cents)) throw new Error("Money must be an integer");
-  return new Intl.NumberFormat(undefined, {
+  const exact = minorUnitsText(cents);
+  const negative = exact.startsWith("-");
+  const unsigned = negative ? exact.slice(1) : exact;
+  const separator = unsigned.indexOf(".");
+  const wholeText = unsigned.slice(0, separator);
+  const fractionText = unsigned.slice(separator + 1);
+  const formatter = new Intl.NumberFormat(undefined, {
     style: "currency",
     currency,
     minimumFractionDigits: 2,
-  }).format(cents / 100);
+    maximumFractionDigits: 2,
+  });
+  return formatter
+    .formatToParts(negative ? -Number(wholeText) : Number(wholeText))
+    .map((part) => (part.type === "fraction" ? fractionText : part.value))
+    .join("");
 }
 
 export function isValidDate(value: string): boolean {
@@ -88,8 +100,22 @@ function naturalBalance(
   credit: number,
 ): number {
   return type === "Asset" || type === "Expense"
-    ? debit - credit
-    : credit - debit;
+    ? checkedDifference(debit, credit, "Account balance")
+    : checkedDifference(credit, debit, "Account balance");
+}
+
+function checkedAdd(a: number, b: number, label: string): number {
+  const value = a + b;
+  if (!Number.isSafeInteger(value))
+    throw new Error(`${label} exceeds safe integer bounds`);
+  return value;
+}
+
+function checkedDifference(a: number, b: number, label: string): number {
+  const value = a - b;
+  if (!Number.isSafeInteger(value))
+    throw new Error(`${label} exceeds safe integer bounds`);
+  return value;
 }
 
 function isCashAccount(account: Account): boolean {
@@ -120,22 +146,34 @@ export function report(snapshot: Snapshot, from: string, to: string): Report {
       const account = accounts.get(line.accountId);
       if (!account) continue;
       const all = allTotals.get(line.accountId) || { debit: 0, credit: 0 };
-      all.debit += line.debit;
-      all.credit += line.credit;
+      all.debit = checkedAdd(all.debit, line.debit, "Debit total");
+      all.credit = checkedAdd(all.credit, line.credit, "Credit total");
       allTotals.set(line.accountId, all);
-      totalDebits += line.debit;
-      totalCredits += line.credit;
+      totalDebits = checkedAdd(totalDebits, line.debit, "Report debit total");
+      totalCredits = checkedAdd(
+        totalCredits,
+        line.credit,
+        "Report credit total",
+      );
       if (inPeriod) {
         const period = periodTotals.get(line.accountId) || {
           debit: 0,
           credit: 0,
         };
-        period.debit += line.debit;
-        period.credit += line.credit;
+        period.debit = checkedAdd(
+          period.debit,
+          line.debit,
+          "Period debit total",
+        );
+        period.credit = checkedAdd(
+          period.credit,
+          line.credit,
+          "Period credit total",
+        );
         periodTotals.set(line.accountId, period);
         if (isCashAccount(account)) {
-          cashIn += line.debit;
-          cashOut += line.credit;
+          cashIn = checkedAdd(cashIn, line.debit, "Cash-in total");
+          cashOut = checkedAdd(cashOut, line.credit, "Cash-out total");
         }
       }
     }
@@ -143,8 +181,9 @@ export function report(snapshot: Snapshot, from: string, to: string): Report {
 
   const trial = snapshot.accounts.map((account) => {
     const total = allTotals.get(account.id) || { debit: 0, credit: 0 };
-    const debit = Math.max(total.debit - total.credit, 0);
-    const credit = Math.max(total.credit - total.debit, 0);
+    const net = checkedDifference(total.debit, total.credit, "Trial balance");
+    const debit = Math.max(net, 0);
+    const credit = Math.max(-net, 0);
     return {
       account,
       debit,
@@ -164,30 +203,45 @@ export function report(snapshot: Snapshot, from: string, to: string): Report {
         debit: 0,
         credit: 0,
       };
-      income += period.credit - period.debit;
+      income = checkedAdd(
+        income,
+        checkedDifference(period.credit, period.debit, "Period income"),
+        "Income total",
+      );
     } else if (row.account.type === "Expense") {
       const period = periodTotals.get(row.account.id) || {
         debit: 0,
         credit: 0,
       };
-      expense += period.debit - period.credit;
-    } else if (row.account.type === "Asset") assets += row.balance;
-    else if (row.account.type === "Liability") liabilities += row.balance;
-    else if (row.account.type === "Equity") equity += row.balance;
+      expense = checkedAdd(
+        expense,
+        checkedDifference(period.debit, period.credit, "Period expense"),
+        "Expense total",
+      );
+    } else if (row.account.type === "Asset")
+      assets = checkedAdd(assets, row.balance, "Assets total");
+    else if (row.account.type === "Liability")
+      liabilities = checkedAdd(liabilities, row.balance, "Liabilities total");
+    else if (row.account.type === "Equity")
+      equity = checkedAdd(equity, row.balance, "Equity total");
   }
 
   // Earnings are cumulative through the report date, while P&L is date-range based.
   let earnings = 0;
   for (const row of trial) {
     if (row.account.type === "Income" || row.account.type === "Expense")
-      earnings += row.account.type === "Income" ? row.balance : -row.balance;
+      earnings = checkedAdd(
+        earnings,
+        row.account.type === "Income" ? row.balance : -row.balance,
+        "Earnings total",
+      );
   }
 
   return {
     trial,
     income,
     expense,
-    profit: income - expense,
+    profit: checkedDifference(income, expense, "Profit"),
     assets,
     liabilities,
     equity,
@@ -196,13 +250,34 @@ export function report(snapshot: Snapshot, from: string, to: string): Report {
     cashOut,
     cashBalance: trial
       .filter((row) => isCashAccount(row.account))
-      .reduce((sum, row) => sum + row.balance, 0),
+      .reduce((sum, row) => checkedAdd(sum, row.balance, "Cash balance"), 0),
     balanced: totalDebits === totalCredits,
   };
 }
 
 export function linesBalanced(lines: Line[]): boolean {
-  const debit = lines.reduce((sum, line) => sum + line.debit, 0);
-  const credit = lines.reduce((sum, line) => sum + line.credit, 0);
-  return lines.length > 0 && debit > 0 && debit === credit;
+  if (
+    lines.some(
+      (line) =>
+        !Number.isSafeInteger(line.debit) ||
+        !Number.isSafeInteger(line.credit) ||
+        line.debit < 0 ||
+        line.credit < 0 ||
+        (line.debit > 0 && line.credit > 0),
+    )
+  )
+    return false;
+  try {
+    const debit = lines.reduce(
+      (sum, line) => checkedAdd(sum, line.debit, "Debit total"),
+      0,
+    );
+    const credit = lines.reduce(
+      (sum, line) => checkedAdd(sum, line.credit, "Credit total"),
+      0,
+    );
+    return lines.length > 0 && debit > 0 && debit === credit;
+  } catch {
+    return false;
+  }
 }

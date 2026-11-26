@@ -6,6 +6,9 @@ import Accounts from "./pages/Accounts";
 import ImportCSV from "./components/ImportCSV";
 import JournalEditor from "./components/JournalEditor";
 import Transactions from "./pages/Transactions";
+import WhatsAppInbox from "./pages/WhatsAppInbox";
+import Integrations from "./pages/Integrations";
+import Receipts from "./pages/Receipts";
 import JournalTable from "./components/JournalTable";
 import { useEffect, useState, type ReactNode } from "react";
 import {
@@ -27,16 +30,22 @@ import {
   ArrowDownLeft,
   HelpCircle,
   Menu,
+  MessageCircle,
+  Database,
+  Receipt,
 } from "lucide-react";
 import { Ledger } from "./lib/db";
-import { parseMoney, report } from "./lib/accounting";
+import { parseMoney, report, formatMoney } from "./lib/accounting";
+import { today } from "./components/utils";
 import { parseCSV, mapCSV, exportCSV } from "./lib/csv";
 import type { Snapshot, Line, Journal, SourceRow, Account } from "./lib/types";
 
-const today = () => new Date().toISOString().slice(0, 10);
 const navigation = [
   ["/", "Overview", LayoutDashboard],
   ["/transactions", "Transactions", ArrowLeftRight],
+  ["/whatsapp", "My Accounts · WhatsApp", MessageCircle],
+  ["/integrations", "Imports & skills", Database],
+  ["/receipts", "Cash memos", Receipt],
   ["/accounts", "Chart of accounts", BookOpen],
   ["/reconciliation", "Reconciliation", CheckCheck],
   ["/reports", "Statements", FileText],
@@ -93,12 +102,7 @@ export default function App() {
       return false;
     }
   };
-  const money = (n: number) =>
-    new Intl.NumberFormat("en", {
-      style: "currency",
-      currency: data?.settings.currency || "BDT",
-      maximumFractionDigits: 2,
-    }).format(n / 100);
+  const money = (n: number) => formatMoney(n, data?.settings.currency || "BDT");
   const journal = (source?: SourceRow, existing?: Journal) =>
     setModal(
       <JournalEditor
@@ -143,7 +147,13 @@ export default function App() {
     );
   const posted = data.journals.filter((j) => j.status === "posted");
   const drafts = data.journals.filter((j) => j.status === "draft");
-  const r = report(data, today().slice(0, 7) + "-01", today());
+  let r: ReturnType<typeof report> | undefined;
+  let reportError = "";
+  try {
+    r = report(data, today().slice(0, 7) + "-01", today());
+  } catch (e) {
+    reportError = (e as Error).message;
+  }
   const title = navigation.find((n) => n[0] === path)?.[1] || "Overview";
   return (
     <div className="app">
@@ -203,7 +213,7 @@ export default function App() {
           </button>
         </div>
         <div className="version">
-          FIRST EDITION <span>v0.1</span>
+          LOCAL WORKSPACE <span>v0.3</span>
         </div>
       </aside>
       <main>
@@ -291,32 +301,40 @@ export default function App() {
                   <span className="small-dot" /> Posted entries only
                 </span>
               </div>
-              <div className="metrics">
-                <Metric
-                  title="Bank & cash"
-                  value={money(r.cashBalance)}
-                  icon={<ArrowLeftRight />}
-                  foot="Balance as of today"
-                />
-                <Metric
-                  title="Income"
-                  value={money(r.income)}
-                  icon={<ArrowDownLeft />}
-                  foot="Earned income this month"
-                />
-                <Metric
-                  title="Expenses"
-                  value={money(r.expense)}
-                  icon={<ArrowUpRight />}
-                  foot="Costs this month"
-                />
-                <Metric
-                  title="Net profit"
-                  value={money(r.profit)}
-                  icon={<FileText />}
-                  foot="Income less expenses"
-                />
-              </div>
+              {reportError && (
+                <p role="alert" className="alert error">
+                  Report unavailable: {reportError}. Your records and backups
+                  remain accessible.
+                </p>
+              )}
+              {r && (
+                <div className="metrics">
+                  <Metric
+                    title="Bank & cash"
+                    value={money(r.cashBalance)}
+                    icon={<ArrowLeftRight />}
+                    foot="Balance as of today"
+                  />
+                  <Metric
+                    title="Income"
+                    value={money(r.income)}
+                    icon={<ArrowDownLeft />}
+                    foot="Earned income this month"
+                  />
+                  <Metric
+                    title="Expenses"
+                    value={money(r.expense)}
+                    icon={<ArrowUpRight />}
+                    foot="Costs this month"
+                  />
+                  <Metric
+                    title="Net profit"
+                    value={money(r.profit)}
+                    icon={<FileText />}
+                    foot="Income less expenses"
+                  />
+                </div>
+              )}
               <div className="overview-body">
                 <section className="panel ledger-panel">
                   <div className="panel-title">
@@ -433,6 +451,15 @@ export default function App() {
             />
           )}
           {path === "/reports" && <Reports data={data} money={money} />}
+          {path === "/integrations" && (
+            <Integrations data={data} ledger={ledger} run={run} />
+          )}
+          {path === "/receipts" && (
+            <Receipts data={data} ledger={ledger} run={run} />
+          )}
+          {path === "/whatsapp" && (
+            <WhatsAppInbox data={data} ledger={ledger} run={run} />
+          )}
           {path === "/assistant" && (
             <Assistant
               data={data}

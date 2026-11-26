@@ -1,0 +1,35 @@
+{
+  "date": "2026-11-27",
+  "platform": "Windows",
+  "node": "v24.20.0",
+  "tests": {
+    "passed": 78,
+    "failed": 0
+  },
+  "typescript": "pass",
+  "productionBuild": "pass",
+  "productionHttpSmoke": "pass",
+  "installedDependencyAuditKnownVulnerabilities": 0,
+  "pnpmLockAuditKnownVulnerabilities": 0,
+  "frozenLockConsistency": "pass",
+  "legacySyntheticWebBackup": {
+    "restored": true,
+    "accounts": 15,
+    "journals": 4,
+    "sources": 2
+  },
+  "liveWhatsApp": "not configured or tested",
+  "receiptOCR": "local English PNG/JPEG with manual review",
+  "interactiveBrowser": "pass: import controls, 73-source catalog, accounting calculators, OCR-ready status, BDT cash/credit preview; no real entries created",
+  "androidDeviceAndUsb": "not tested",
+  "release": "0.3.0",
+  "retainedEngineTests": {
+    "passed": 35,
+    "failed": 0
+  },
+  "retainedSourceFilesVerified": 66,
+  "sourceEngineToWebContract": "pass: five synthetic journals",
+  "sourceCatalogUniqueRepositories": 73,
+  "localSyntheticEnglishOcr": "pass",
+  "erpNextCompose": "syntax and localhost/password boundaries passed; stack not launched"
+}

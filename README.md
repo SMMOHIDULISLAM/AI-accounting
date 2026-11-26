@@ -1,128 +1,79 @@
 # AI Accounting
 
-AI Accounting is a local-first bookkeeping workbench for learning and keeping a small double-entry ledger. The browser stores ledger data locally; the optional assistant is a drafting aid that can connect only to a local Ollama installation when the server is explicitly started in local mode.
+A local-first double-entry bookkeeping app with a browser SQLite ledger, optional local Ollama assistance, and an optional **My Accounts** WhatsApp intake queue.
 
-**Current status:** this is the web foundation, not a no-install F-drive portable package. Browser IndexedDB does not move with a removable disk. The earlier F-drive launcher proposal is superseded. The user selected a native Android APK first, Windows second, and USB backups only; see [ANDROID-PLAN.md](ANDROID-PLAN.md). A separate private Android build task has been created. No native Android source or APK is included in this web repository.
+## Version 0.3: three tracks
 
-This project is not a CPA/CA certification service, auditor, tax-filing tool, or guaranteed worldwide GAAP/IFRS compliance engine. Country and reporting-framework fields are context for the user's work, not an implementation of every jurisdiction's rules. Reports are draft management reports and do not claim to be a complete statutory financial statement set.
+The repository now keeps [Core](editions/core/README.md), [ERPNext](editions/erpnext/README.md) and [WhatsApp-first](editions/whatsapp/README.md) tracks. Core has local foreign-book inspection/import, source aging and accounting-pattern tools. The ERP edition has a separate evaluation profile; it has not been launched here. Cash memos supports local English receipt OCR with manual review. The [integration scope](docs/ACCOUNTING-SOURCES.md) records exactly what is active and what remains a reference.
 
-## What is local
+**73 unique requested projects** are catalogued in the app. Two pinned licensed source snapshots are retained under `third_party/`; the other projects are not all installed or merged. Run `pnpm verify:sources` to verify the retained code. Full ERP code and the browser ledger remain separate systems with different data models and licenses.
 
-The browser database is local to the current browser and origin. It is not a shared cloud ledger. Clearing browser storage can remove records, so export `.sqlite` backups regularly and validate restores before relying on them. The database is **not encrypted** by this application. A private source repository protects source-code visibility, not browser records or downloaded backups. The app prevents conflicting writes from multiple tabs rather than silently overwriting another session; use one active tab for the ledger.
+## My Accounts input
 
-The browser sends only the explicitly selected transaction and context to the optional local assistant endpoint. It does not automatically send the complete ledger. The server never executes SQL or posts a journal from model output. Account suggestions remain drafts and always require human review.
+Open **My Accounts · WhatsApp** to try:
 
-## Requirements
-
-For local development, install:
-
-- Node.js 22 or newer
-- pnpm 11 or newer
-- Ollama, only if local model assistance is wanted
-
-Available project scripts:
-
-```json
-{
-  "dev": "tsx server/index.ts",
-  "local": "tsx server/index.ts --local",
-  "build": "vite build && node scripts/copy-wasm.mjs",
-  "start": "tsx server/index.ts --production --local",
-  "test": "vitest run",
-  "check": "tsc --noEmit"
-}
+```text
+sale cash 100 bdt, credit 50 bdt
 ```
 
-Install project dependencies:
+The review shows debit Cash 100, debit Receivables 50, and credit Sales 150 BDT. “Credit” in this command means a customer's unpaid amount. The message creates a draft; you review and post it in Transactions. Bengali digits and `বিক্রি নগদ ১০০ বাকি ৫০` also work. This first parser handles explicit BDT sale commands only. Unknown wording, other currencies, tax and inventory treatment require manual review. It does not use AI to guess missing facts.
+
+Optional WhatsApp Business webhooks receive allowlisted messages into a private server-side SQLite inbox. Delivery IDs prevent duplicates. Only authenticated inbox access can fetch messages. Imports into the browser ledger are idempotent, including retries after posting. Incoming cash-memo image/document **references** are retained; their media download and WhatsApp replies remain unfinished. Manually chosen PNG/JPEG memos can now be read using local English Tesseract in Cash memos. No live WhatsApp connection is configured by this source update.
+
+[WhatsApp setup and boundaries](docs/WHATSAPP.md) · [Review and evidence](docs/REVIEW-2026-11-27.md)
+
+## Run locally
+
+Requirements: **Node.js 24 LTS**, pnpm 11.25.0, and a current browser with IndexedDB and Web Locks. Ollama is optional.
 
 ```bash
-pnpm install
-```
-
-## Run the app
-
-For the normal Vite development server, which is also the safe preview/cloud mode:
-
-```bash
+pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-It listens on `0.0.0.0` and uses `PORT` when supplied, otherwise port `3000`. In this mode the server **does not probe or call loopback Ollama**. `GET /api/ai/status` intentionally returns:
+`dev` listens on port 3000 (or `PORT`) with local AI disabled. For loopback-only use with an installed local Ollama model, run `pnpm local`.
 
-```json
-{
-  "available": false,
-  "reason": "Run the app locally with Ollama to connect AI.",
-  "models": []
-}
-```
-
-The guided rules and manual account controls remain available. A development preview is not model-powered merely because an AI panel is visible.
-
-To run the app on your own computer with local Ollama enabled:
-
-```bash
-pnpm local
-```
-
-This binds to `127.0.0.1` and permits the server to call only these fixed Ollama endpoints:
-
-- `http://127.0.0.1:11434/api/tags`
-- `http://127.0.0.1:11434/api/chat`
-
-Production-style local serving after a frontend build is:
+For a production build and loopback-only serving:
 
 ```bash
 pnpm build
 pnpm start
 ```
 
-`start` uses `--production --local`, serves the built SPA from `dist`, and still binds to `127.0.0.1`. `/health` returns HTTP 200 with `{ "ok": true }` when the server is ready. API paths are never replaced with the SPA fallback; unknown API routes return an API 404.
-
-## Install a local model
-
-Start Ollama, then pull a model you choose:
+`pnpm serve` serves the production build on `0.0.0.0` with Ollama disabled, for deployment behind HTTPS. That command does not provision hosting, TLS, WhatsApp credentials or persistent storage. Docker builds on Node 24; mount a private persistent volume for the optional inbox. The development/build scripts copy the WASM binary from the installed sql.js package, keeping binary and JavaScript versions paired.
 
 ```bash
-ollama serve
-ollama pull <a-local-model-you-have-chosen>
+pnpm check
+pnpm test
+pnpm build
+pnpm smoke
+pnpm audit
 ```
 
-Do not assume a fixed model ID: model availability, quality, memory use, and download size change over time. The application lists installed models from Ollama and filters names/metadata that identify cloud or remote models. Cloud/remote models are rejected, and there is no paid provider or cloud fallback.
+The GitHub Actions workflow runs install, type checking, tests and build. Local testing and actual GitHub execution are separate evidence.
 
-The first model download can use substantial disk space, memory, CPU/GPU resources, electricity, and time. Higher-quality models may need substantially more memory. No model is guaranteed to classify accounting correctly. Review the economic substance, questions, account options, debit/credit effect, and applicable local requirements yourself. The server forces `needsReview: true`, validates suggested account IDs against the supplied chart of accounts, and rejects malformed model output.
+## Your data
 
-If Ollama is stopped, unavailable, has no eligible local model, times out, or returns invalid structured output, the app reports an error. It does not fabricate a successful answer or silently switch to a paid/cloud service.
+The **ledger** stays in this browser's IndexedDB, scoped to its browser and origin. It is not synchronized between devices. Keep one active ledger tab. Clearing browser storage can remove records. Export genuine `.sqlite` backups, keep multiple copies and test a restore. Backups queue behind earlier saves and exclude later saves. Restore checks the canonical web schema and record invariants before replacement; altered triggers, unsafe totals and invalid reconciliation links are rejected.
 
-## Local AI boundaries
+The optional **WhatsApp intake** changes the data path: selected incoming messages pass through Meta and the configured intake server. That server stores text and receipt metadata separately from the local ledger. Use one designated browser ledger for intake; two separate browsers can otherwise import the same source into separate ledgers. Browser backups do not include the server inbox. Back up the inbox separately using a consistent SQLite backup/snapshot with correct WAL handling.
 
-`POST /api/ai/chat` accepts a bounded JSON request containing a selected model, user/assistant messages, country and framework context, the supplied account list, and an optional transaction. Requests are same-origin only, rate-limited, size-limited, and given a finite upstream timeout. The model receives a strong instruction to treat transaction data as untrusted data rather than instructions, not to assume a complete ledger, explain uncertainty, distinguish accounting qualifications from standards, avoid certification claims, and never produce SQL or autonomous posting commands.
+Records, inbox data and exported backups are **not encrypted by this app**. Keep `.env`, tokens, messages, databases and backups out of Git. Source visibility does not protect financial records. The repository was observed as public during the 27 November 2026 review; no sharing settings were changed by this update.
 
-The server validates the returned JSON shape:
+## Accounting controls
 
-```json
-{
-  "explanation": "...",
-  "questions": ["..."],
-  "options": [
-    { "accountId": "account-id-from-the-request", "reason": "..." }
-  ],
-  "needsReview": true
-}
-```
+- Exact integer minor units with safe aggregate bounds and exact decimal edit/export text.
+- Balanced, nonzero posting; posted journals cannot be edited through the ledger API. Correct them with linked reversals.
+- CSV source rows remain separate from journals; duplicates are flagged for review.
+- Exact signed bank/cash reconciliation within three days, with no line reuse.
+- Posted-only draft management reports. Period profit/loss is separate from cumulative as-of balances.
 
-Only account IDs in the request are accepted. Even if a model returns `needsReview: false`, the server changes it to `true` before returning it to the browser.
+This is a single-currency ledger. Currency cannot change after records exist. Custom cash/bank categories, invoice/customer subledgers, inventory costing, tax engines, multi-user access, cloud synchronization and statutory statement sets need further implementation. This app does not certify GAAP/IFRS compliance, audit accounts or file taxes.
 
-## Safety and backup reminders
+## Optional local AI
 
-Use the guided rules when local AI is unavailable or disabled. Check dates, descriptions, amounts, account heads, tax treatment, recognition timing, and the debit/credit balance before posting. A model can be confidently wrong, and framework-specific recognition, tax, disclosures, policies, comparatives, and jurisdiction-specific filings may require qualified local advice.
+Only `--local` mode may call the fixed loopback Ollama `/api/tags` and `/api/chat` endpoints on `127.0.0.1:11434`. Cloud/remote models are rejected; there is no cloud fallback. Install a model you choose with Ollama, then use the Assistant connection control. Only explicitly submitted context is sent. Structured output must reference supplied account IDs and is always marked for review. Model output cannot execute SQL or post entries.
 
-Export backups from the app and keep more than one copy in a safe location. Test a restore. Browser storage, downloads, and any computer running Ollama may be accessible to other users or software on that computer. This application does not encrypt the database, backups, or Ollama's local model files.
+## Android source
 
-## Latest storage test evidence
-
-See [SQLITE-BACKUP-TESTS.md](SQLITE-BACKUP-TESTS.md). Twenty-one regression tests pass, plus 16 supplementary backup preflight checks and nine host-SQLite aggregate checks. Two restored-data validation gaps were fixed: mismatched parent account type and reconciliation outside the three-day limit. These checks use synthetic data; they do not verify Android-device SQLite or a physical USB/Android document-provider workflow. Those native checks remain with the dedicated Android build task.
-
-## Repository and deployment status
-
-The private repository https://github.com/SMMOHIDULISLAM/AI-accounting was created through owner authorization, and the saved source transfer was verified and completed on 20 November 2026. The web foundation is available in Preview but has not been published. Native Android, subsequent Windows packaging and online/mobile synchronization remain unfinished. The earlier F-drive runtime proposal has been replaced by USB backups only. No paid hosting, cloud ledger, API purchase, billing integration, or cloud inference is required for the current local-run source version.
+The supplied `aibooks` archive is a **separate** Expo/React Native app with a different SQLite schema version. It has not been merged into this web repository. Web v1 and native v2 backups are not interchangeable without a tested migration. The handoff documents record host/mocked tests; they do not prove a successful APK, Android runtime, physical USB workflow or native model inference. The historical [Android plan](ANDROID-PLAN.md) and [storage evidence](SQLITE-BACKUP-TESTS.md) remain for context. The current WhatsApp direction is documented above and in `docs/WHATSAPP.md`.

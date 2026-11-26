@@ -1,0 +1,268 @@
+//! `Reader` on the synthetic company file in `tests/common`.
+
+mod common;
+
+use std::path::PathBuf;
+
+use openqbw::{BackupFailure, Error, ErrorKind, ReadOptions, Reader, RecordFlag};
+
+fn fixture_dir() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/data")
+}
+
+#[test]
+fn committed_fixtures_match_the_generator() {
+    // Set OPENQBW_REGEN_FIXTURES=1 to rewrite them after changing the
+    // generator.
+    let fixtures = [
+        ("synthetic.qbw", common::synthetic_qbw(false)),
+        ("synthetic-bad-record.qbw", common::synthetic_qbw(true)),
+        ("synthetic-counts.qbw", common::synthetic_qbw_counts()),
+    ];
+    for (name, bytes) in fixtures {
+        let path = fixture_dir().join(name);
+        if std::env::var_os("OPENQBW_REGEN_FIXTURES").is_some() {
+            std::fs::create_dir_all(fixture_dir()).unwrap();
+            std::fs::write(&path, &bytes).unwrap();
+        }
+        let committed = std::fs::read(&path).unwrap();
+        assert!(committed == bytes, "{name} is stale; regenerate it");
+    }
+}
+
+#[test]
+fn reads_catalog_headers_and_line_items() {
+    let r = Reader::from_bytes(common::synthetic_qbw(false), &ReadOptions::default()).unwrap();
+    assert_eq!(r.page_count(), 8);
+    assert_eq!(r.attribution_gap(), None);
+    let names: Vec<&str> = r.catalog().items.iter().map(|t| t.name.as_str()).collect();
+    assert_eq!(names.len(), 3, "{names:?}");
+
+    let headers = r.transactions().unwrap();
+    assert_eq!(headers.items.len(), 1);
+    assert_eq!(headers.items[0].qb_id, common::HEADER_ID);
+    assert_eq!(headers.items[0].txn_type(), "invoice");
+    assert_eq!(headers.items[0].txn_date_raw, Some(common::SA_DAY));
+
+    let lines = r.line_items().unwrap();
+    assert!(lines.rejected.is_empty());
+    let values: Vec<String> = lines
+        .items
+        .iter()
+        .map(|l| l.value.expect("decoded").to_string())
+        .collect();
+    assert_eq!(values, ["415", "-34.45", "145", "-145"]);
+    assert_eq!(lines.items[1].value_raw, [0x02, 0xBF, 0x2D, 0x22]);
+    for l in &lines.items {
+        assert!(
+            !l.flags.contains(&RecordFlag::KeystreamUnverified),
+            "{:?}",
+            l.flags
+        );
+        assert_eq!(l.txn_date_days_since_unix(), Some(19_800));
+    }
+    assert_eq!(
+        lines.items[0].item_qb_id.as_deref(),
+        Some("ITEM000000000001")
+    );
+}
+
+#[test]
+fn undecodable_record_is_an_error_unless_lenient() {
+    let bytes = common::synthetic_qbw(true);
+    let strict = Reader::from_bytes(bytes.clone(), &ReadOptions::strict()).unwrap();
+    let e = strict.line_items().unwrap_err();
+    assert_eq!(e.kind(), ErrorKind::InvalidValueLength);
+    assert_eq!(e.page_number(), Some(7));
+
+    let lenient = Reader::from_bytes(bytes, &ReadOptions::lenient()).unwrap();
+    let scan = lenient.line_items().unwrap();
+    assert_eq!(scan.items.len(), 4);
+    assert_eq!(scan.rejected.len(), 1);
+    assert_eq!(scan.rejected[0].kind(), ErrorKind::InvalidValueLength);
+}
+
+#[test]
+fn root_page_that_is_not_a_data_page_is_flagged_and_not_used() {
+    // S1-11: a data_root_page that is past the end of the file or not an `E`
+    // page cannot be a table root, but used to move attribution boundaries.
+    let r = Reader::from_bytes(common::synthetic_qbw_bad_root(), &ReadOptions::default()).unwrap();
+    let bogus = r
+        .catalog()
+        .items
+        .iter()
+        .find(|t| t.name == "abmc_bogus")
+        .unwrap();
+    assert!(bogus.flags.contains(&RecordFlag::RootPageInvalid));
+    assert!(r.attribution().attribute(3).is_none());
+    assert!(
+        r.catalog()
+            .warnings
+            .iter()
+            .any(|w| w.kind.as_str() == "invalid_root_pages")
+    );
+}
+
+#[test]
+fn not_a_company_file_is_a_format_error() {
+    let mut bytes = common::synthetic_qbw(false);
+    bytes[0x14] ^= 0xFF;
+    let e = Reader::from_bytes(bytes, &ReadOptions::default()).unwrap_err();
+    assert_eq!(e.kind(), ErrorKind::BadMagic);
+}
+
+#[test]
+fn reads_the_creation_and_row_stamps() {
+    let r = Reader::from_bytes(common::synthetic_qbw(false), &ReadOptions::default()).unwrap();
+    // Superblock 0x2A holds one minute more than the rows' stamp.
+    assert_eq!(r.created_raw(), 219_745_714);
+    assert_eq!(r.created_unix_seconds(), Some(1_513_744_440));
+    for t in &r.catalog().items {
+        assert_eq!(t.stamp_unix_seconds(), Some(1_513_744_380), "{}", t.name);
+    }
+}
+
+#[test]
+fn foreign_file_that_is_not_page_aligned_reports_the_magic() {
+    // 668672 bytes is the size of the 2001-era file in issue 38; its length is
+    // not a multiple of the page size and its header is not SQL Anywhere's.
+    let mut bytes = vec![0x41u8; 668_672];
+    bytes[0x14..0x18].copy_from_slice(&0x1234_5678u32.to_le_bytes());
+    let e = Reader::from_bytes(bytes, &ReadOptions::default()).unwrap_err();
+    assert_eq!(e.kind(), ErrorKind::BadMagic, "{e}");
+    let msg = e.to_string();
+    assert!(msg.contains("bad superblock magic 0x12345678"), "{msg}");
+    assert!(msg.contains("not supported"), "{msg}");
+}
+
+#[test]
+fn damaged_page_is_an_error() {
+    let mut bytes = common::synthetic_qbw(false);
+    bytes[5 * common::PAGE + 0x700] ^= 0x01;
+    let e = Reader::from_bytes(bytes, &ReadOptions::default()).unwrap_err();
+    assert_eq!(e.kind(), ErrorKind::BadCrc);
+    assert_eq!(e.page_number(), Some(5));
+}
+
+#[test]
+fn missing_file_is_an_io_error() {
+    let e = Reader::open("/nonexistent/openqbw.qbw", &ReadOptions::default()).unwrap_err();
+    assert_eq!(e.kind(), ErrorKind::Io);
+}
+
+fn temp_file(name: &str, bytes: &[u8]) -> PathBuf {
+    let dir = std::env::temp_dir().join(format!("openqbw-reader-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join(name);
+    std::fs::write(&path, bytes).unwrap();
+    path
+}
+
+fn backup_failure(e: Error) -> BackupFailure {
+    match e {
+        Error::Backup { reason, .. } => reason,
+        other => panic!("not a backup error: {other:?}"),
+    }
+}
+
+#[test]
+fn opens_a_qbb_backup() {
+    let qbb = common::synthetic_qbb(
+        Some(common::QBB_HEADER),
+        Some(&common::synthetic_qbw(false)),
+    );
+    let path = temp_file("backup.qbb", &qbb);
+    let r = Reader::open(&path, &ReadOptions::default()).unwrap();
+    assert_eq!(r.page_count(), 8);
+    assert_eq!(r.catalog().items.len(), 3);
+    assert_eq!(r.transactions().unwrap().items.len(), 1);
+}
+
+#[test]
+fn backup_is_detected_by_content_not_extension() {
+    let qbb = common::synthetic_qbb(
+        Some(common::QBB_HEADER),
+        Some(&common::synthetic_qbw(false)),
+    );
+    let renamed = temp_file("backup-renamed.qbw", &qbb);
+    assert_eq!(
+        Reader::open(&renamed, &ReadOptions::default())
+            .unwrap()
+            .page_count(),
+        8
+    );
+
+    let qbw = temp_file("company.qbb", &common::synthetic_qbw(false));
+    assert_eq!(
+        Reader::open(&qbw, &ReadOptions::default())
+            .unwrap()
+            .page_count(),
+        8
+    );
+}
+
+#[test]
+fn qbb_that_is_not_a_compound_file_is_a_bad_magic_error() {
+    let path = temp_file("junk.qbb", &[0x41; 8192]);
+    let e = Reader::open(&path, &ReadOptions::default()).unwrap_err();
+    assert_eq!(e.kind(), ErrorKind::BadMagic, "{e}");
+}
+
+#[test]
+fn backup_without_the_company_stream_is_an_error() {
+    let qbb = common::synthetic_qbb(Some(common::QBB_HEADER), None);
+    let path = temp_file("no-company.qbb", &qbb);
+    let e = Reader::open(&path, &ReadOptions::default()).unwrap_err();
+    assert_eq!(
+        backup_failure(e),
+        BackupFailure::MissingStream("/file_COMPANY_FILE")
+    );
+}
+
+#[test]
+fn backup_without_a_compression_header_is_an_error() {
+    let qbb = common::synthetic_qbb(None, Some(&common::synthetic_qbw(false)));
+    let path = temp_file("no-header.qbb", &qbb);
+    let e = Reader::open(&path, &ReadOptions::default()).unwrap_err();
+    assert_eq!(
+        backup_failure(e),
+        BackupFailure::MissingStream("/Compression_Header")
+    );
+}
+
+#[test]
+fn backup_with_a_short_compression_header_is_an_error() {
+    let qbb = common::synthetic_qbb(
+        Some(b"Compression_Format"),
+        Some(&common::synthetic_qbw(false)),
+    );
+    let path = temp_file("short-header.qbb", &qbb);
+    let e = Reader::open(&path, &ReadOptions::default()).unwrap_err();
+    assert_eq!(backup_failure(e), BackupFailure::ShortHeader);
+}
+
+#[test]
+fn backup_with_another_compression_is_an_error() {
+    let qbb = common::synthetic_qbb(
+        Some(b"Compression_Format=invalid_compression;"),
+        Some(&common::synthetic_qbw(false)),
+    );
+    let path = temp_file("other-compression.qbb", &qbb);
+    let e = Reader::open(&path, &ReadOptions::default()).unwrap_err();
+    assert_eq!(backup_failure(e), BackupFailure::UnsupportedCompression);
+}
+
+#[test]
+fn backup_over_the_size_limit_is_an_error() {
+    let company = common::synthetic_qbw(false);
+    let qbb = common::synthetic_qbb(Some(common::QBB_HEADER), Some(&company));
+    let path = temp_file("limit.qbb", &qbb);
+    let limit = company.len() - 1;
+    let options = ReadOptions::default().with_max_backup_bytes(limit);
+    let e = Reader::open(&path, &options).unwrap_err();
+    assert_eq!(e.kind(), ErrorKind::Backup);
+    assert_eq!(backup_failure(e), BackupFailure::TooLarge { limit });
+
+    let options = ReadOptions::default().with_max_backup_bytes(company.len());
+    assert!(Reader::open(&path, &options).is_ok());
+}

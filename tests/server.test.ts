@@ -1,16 +1,15 @@
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { createServer, type Server } from "node:http";
-import { spawn, type ChildProcess } from "node:child_process";
+import express from "express";
+import { createApi } from "../server/index";
 
-let app: ChildProcess;
-let mock: Server;
+let server: Server;
 let mode = "empty";
-const origin = "http://127.0.0.1:3109";
+let origin: string;
 beforeAll(async () => {
-  mock = createServer((req, res) => {
-    res.setHeader("Content-Type", "application/json");
-    if (req.url === "/api/tags")
-      res.end(
+  const transport: typeof fetch = async (url) => {
+    if (String(url) === "http://127.0.0.1:11434/api/tags")
+      return new Response(
         JSON.stringify({
           models:
             mode === "empty"
@@ -25,49 +24,39 @@ beforeAll(async () => {
                 : [{ name: "mock-test-model" }],
         }),
       );
-    else
-      res.end(
-        JSON.stringify({
-          message: {
-            content: JSON.stringify({
-              explanation: "Mock response for adapter validation only.",
-              questions: ["Was the service delivered?"],
-              options: [
-                {
-                  accountId: "sales",
-                  reason: "Only if earned and not already recorded.",
-                },
-              ],
-              needsReview: false,
-            }),
-          },
-        }),
-      );
-  });
+    expect(String(url)).toBe("http://127.0.0.1:11434/api/chat");
+    return new Response(
+      JSON.stringify({
+        message: {
+          content: JSON.stringify({
+            explanation: "Mock response for adapter validation only.",
+            questions: ["Was the service delivered?"],
+            options: [
+              {
+                accountId: "sales",
+                reason: "Only if earned and not already recorded.",
+              },
+            ],
+            needsReview: false,
+          }),
+        },
+      }),
+    );
+  };
+  const app = express();
+  createApi(app, true, transport);
+  server = createServer(app);
   await new Promise<void>((resolve, reject) => {
-    mock.once("error", reject);
-    mock.listen(11434, "127.0.0.1", resolve);
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
   });
-  app = spawn(
-    process.execPath,
-    ["--import", "tsx", "server/index.ts", "--production", "--local"],
-    {
-      cwd: process.cwd(),
-      env: { ...process.env, PORT: "3109" },
-      stdio: "ignore",
-    },
-  );
-  for (let i = 0; i < 100; i++) {
-    try {
-      if ((await fetch(origin + "/health")).ok) return;
-    } catch {}
-    await new Promise((r) => setTimeout(r, 50));
-  }
-  throw Error("Local test server did not start");
+  const address = server.address();
+  if (!address || typeof address === "string")
+    throw Error("Test server did not start");
+  origin = `http://127.0.0.1:${address.port}`;
 }, 10000);
 afterAll(async () => {
-  app?.kill("SIGTERM");
-  if (mock) await new Promise<void>((r) => mock.close(() => r()));
+  if (server) await new Promise<void>((r) => server.close(() => r()));
 });
 const request = {
   model: "mock-test-model",

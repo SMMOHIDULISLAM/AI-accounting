@@ -1,0 +1,32 @@
+[workspace]
+resolver = "3"
+members = ["crates/openqbw", "crates/openqbw-cli", "crates/openqbw-py"]
+
+[workspace.package]
+version = "0.2.0"
+edition = "2024"
+rust-version = "1.95"
+license = "Apache-2.0"
+repository = "https://github.com/Sigilweaver/OpenQBW"
+homepage = "https://sigilweaver.app/openqbw/"
+documentation = "https://sigilweaver.app/openqbw/docs/"
+readme = "README.md"
+authors = ["Nathan Riley"]
+keywords = ["quickbooks", "qbw", "accounting", "parser", "intuit"]
+categories = ["parser-implementations", "command-line-utilities"]
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.dependencies]
+openqbw = { path = "crates/openqbw", version = "0.2.0" }
+opensqlany = "0.3.0"
+# Local cross-repo dev: add a `.cargo/config.toml` with
+#   [patch.crates-io]
+#   opensqlany = { path = "../OpenSQLAnywhere/crates/opensqlany" }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+rusqlite = { version = "0.43", features = ["bundled"] }
+thiserror = "2"
+cfb = "0.16"
+flate2 = "1"

@@ -3,7 +3,16 @@ dist/
 .env
 .env.*
 !.env.example
+!**/.env.example
 *.sqlite
 *.db
 *.log
 coverage/
+data/
+!third_party/OpenQBW/crates/openqbw/tests/data/
+!third_party/OpenQBW/crates/openqbw/tests/data/*.qbw
+*.sqlite-wal
+*.sqlite-shm
+public/sql-wasm.wasm
+__pycache__/
+**/target/
