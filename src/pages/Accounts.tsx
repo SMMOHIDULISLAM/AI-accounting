@@ -1,3 +1,9 @@
+import {
+  t as tr,
+  useLanguage,
+  accountLabel,
+  accountDescription,
+} from "../lib/i18n";
 import { useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
@@ -25,6 +31,7 @@ import { parseCSV, mapCSV, exportCSV } from "../lib/csv";
 import type { Snapshot, Line, Journal, SourceRow, Account } from "../lib/types";
 import { today, saveFile } from "../components/utils";
 export default function Accounts({ data, money, run, ledger }: any) {
+  useLanguage();
   const [type, setType] = useState("All");
   const [adding, setAdding] = useState(false);
   const balances = report(data, "0001-01-01", today()).trial;
@@ -38,12 +45,12 @@ export default function Accounts({ data, money, run, ledger }: any) {
               onClick={() => setType(t)}
               key={t}
             >
-              {t}
+              {tr(t)}
             </button>
           ),
         )}
         <button className="text-btn" onClick={() => setAdding(!adding)}>
-          <Plus size={14} /> Custom head
+          <Plus size={14} /> {tr(" Custom head")}
         </button>
       </div>
       {adding && (
@@ -68,46 +75,48 @@ export default function Accounts({ data, money, run, ledger }: any) {
         >
           <input
             name="code"
-            placeholder="Unique code"
+            placeholder={tr("Unique code")}
             maxLength={50}
             required
           />
           <input
             name="name"
-            placeholder="Account name"
+            placeholder={tr("Account name")}
             maxLength={200}
             required
           />
           <select name="type">
             {["Asset", "Liability", "Equity", "Income", "Expense"].map((t) => (
-              <option key={t}>{t}</option>
+              <option key={t} value={t}>
+                {tr(t)}
+              </option>
             ))}
           </select>
           <select name="parentId">
-            <option value="">No parent</option>
+            <option value="">{tr("No parent")}</option>
             {data.accounts.map((a: Account) => (
               <option key={a.id} value={a.id}>
-                {a.name}
+                {accountLabel(a)}
               </option>
             ))}
           </select>
           <input
             name="description"
-            placeholder="Plain-language explanation"
+            placeholder={tr("Plain-language explanation")}
             maxLength={1000}
             required
           />
-          <button>Add account</button>
+          <button>{tr("Add account")}</button>
         </form>
       )}
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Code</th>
-              <th>Account head & explanation</th>
-              <th>Branch</th>
-              <th>Balance</th>
+              <th>{tr("Code")}</th>
+              <th>{tr("Account head & explanation")}</th>
+              <th>{tr("Branch")}</th>
+              <th>{tr("Balance")}</th>
             </tr>
           </thead>
           <tbody>
@@ -117,19 +126,21 @@ export default function Accounts({ data, money, run, ledger }: any) {
                 <tr key={a.id}>
                   <td className="numeric">{a.code}</td>
                   <td>
-                    <strong>{a.name}</strong>
+                    <strong>{accountLabel(a)}</strong>
                     <small>
-                      {a.description}
+                      {accountDescription(a)}
                       {a.parentId
-                        ? " · Parent: " +
-                          data.accounts.find(
-                            (p: Account) => p.id === a.parentId,
-                          )?.name
+                        ? tr(" · Parent: ") +
+                          accountLabel(
+                            data.accounts.find(
+                              (p: Account) => p.id === a.parentId,
+                            ),
+                          )
                         : ""}
                     </small>
                   </td>
                   <td>
-                    <span className="chip">{a.type}</span>
+                    <span className="chip">{tr(a.type)}</span>
                   </td>
                   <td className="numeric">
                     {money(

@@ -1,3 +1,11 @@
+import {
+  t as tr,
+  useLanguage,
+  accountLabel,
+  uiMoney,
+  uiNumber,
+  message,
+} from "../lib/i18n";
 import { useEffect, useState } from "react";
 import {
   inspectExternalBook,
@@ -10,7 +18,7 @@ import {
   sourceAging,
   stockCost,
 } from "../lib/accounting-skills";
-import { formatMoney, parseMoney } from "../lib/accounting";
+import { parseMoney } from "../lib/accounting";
 import { exportCSV } from "../lib/csv";
 import { saveFile, today } from "../components/utils";
 import type { Ledger } from "../lib/db";
@@ -23,6 +31,7 @@ type Props = {
 };
 const currencies = ["BDT", "USD", "GBP", "EUR", "CAD", "INR", "AUD"];
 export default function Integrations(props: Props) {
+  useLanguage();
   const [tab, setTab] = useState("Import books");
   return (
     <>
@@ -34,7 +43,7 @@ export default function Integrations(props: Props) {
             aria-pressed={tab === name}
             onClick={() => setTab(name)}
           >
-            {name}
+            {tr(name)}
           </button>
         ))}
       </div>
@@ -50,6 +59,7 @@ export default function Integrations(props: Props) {
 }
 
 function BookImport({ data, ledger, run }: Props) {
+  useLanguage();
   const [book, setBook] = useState<ExternalBook>();
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [bookId, setBookId] = useState("");
@@ -82,19 +92,19 @@ function BookImport({ data, ledger, run }: Props) {
   );
   return (
     <section className="panel padded integration-panel">
-      <h2>Inspect another book before importing</h2>
+      <h2>{tr("Inspect another book before importing")}</h2>
       <p>
-        Files are inspected locally in a separate in-memory SQLite database.
-        Your live ledger is not replaced. Export a consistent source backup
-        including committed WAL data first.
+        {tr(
+          "Files are inspected locally in a separate in-memory SQLite database. Your live ledger is not replaced. Export a consistent source backup including committed WAL data first.",
+        )}
       </p>
       <p>
-        Accepts Ledger Reborn backups, the accounting-sqlite manual Journals
-        format, and OpenQBW SQLite exports. Raw QBW/QBB parsing requires the
-        retained OpenQBW toolchain described in the repository.
+        {tr(
+          "Accepts Ledger Reborn backups, the accounting-sqlite manual Journals format, and OpenQBW SQLite exports. Raw QBW/QBB parsing requires the retained OpenQBW toolchain described in the repository.",
+        )}
       </p>
       <label>
-        For signed accounting-sqlite journals: positive amounts mean
+        {tr("For signed accounting-sqlite journals: positive amounts mean")}
         <select
           value={positive}
           disabled={busy}
@@ -104,13 +114,15 @@ function BookImport({ data, ledger, run }: Props) {
             setReviewed(false);
           }}
         >
-          <option value="">Select before choosing that source format</option>
-          <option value="debit">Debit</option>
-          <option value="credit">Credit</option>
+          <option value="">
+            {tr("Select before choosing that source format")}
+          </option>
+          <option value="debit">{tr("Debit")}</option>
+          <option value="credit">{tr("Credit")}</option>
         </select>
       </label>
       <label>
-        Choose a SQLite source (maximum 20 MB)
+        {tr("Choose a SQLite source (maximum 20 MB)")}
         <input
           type="file"
           accept=".sqlite,.sqlite3,.db"
@@ -141,36 +153,36 @@ function BookImport({ data, ledger, run }: Props) {
           }}
         />
       </label>
-      {busy && <p role="status">Inspecting source…</p>}
+      {busy && <p role="status">{tr("Inspecting source…")}</p>}
       {error && (
         <p className="alert error" role="alert">
-          {error}
+          {tr(error)}
         </p>
       )}
       {notice && (
         <p className="alert success" role="status">
-          {notice}
+          {tr(notice)}
         </p>
       )}
       {book && (
         <>
           <h3>
-            {book.format} · {book.entries.length} journals ·{" "}
-            {book.accounts.length} accounts
+            {book.format} · {book.entries.length} {tr(" journals ·")}{" "}
+            {book.accounts.length} {tr(" accounts")}
           </h3>
           {book.warnings.map((warning) => (
             <p className="note" key={warning}>
-              {warning}
+              {tr(warning)}
             </p>
           ))}
           {book.errors.map((message) => (
             <p role="alert" className="alert error" key={message}>
-              {message}
+              {tr(message)}
             </p>
           ))}
           {book.format === "openqbw" ? (
             <>
-              <h3>Recovered fields · inspection only</h3>
+              <h3>{tr("Recovered fields · inspection only")}</h3>
               <dl>
                 {Object.entries(book.diagnostics).map(([key, value]) => (
                   <div className="statement-row" key={key}>
@@ -180,18 +192,18 @@ function BookImport({ data, ledger, run }: Props) {
                 ))}
               </dl>
               <p>
-                {book.rawLines.length} recovered line records. Showing the first
-                20.
+                {book.rawLines.length}{" "}
+                {tr(" recovered line records. Showing the first 20.")}
               </p>
               <div className="table-wrap">
                 <table>
                   <thead>
                     <tr>
-                      <th>Parent ID</th>
-                      <th>Raw numeric value</th>
-                      <th>Undecoded reason</th>
-                      <th>Raw date</th>
-                      <th>Flags</th>
+                      <th>{tr("Parent ID")}</th>
+                      <th>{tr("Raw numeric value")}</th>
+                      <th>{tr("Undecoded reason")}</th>
+                      <th>{tr("Raw date")}</th>
+                      <th>{tr("Flags")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -199,7 +211,7 @@ function BookImport({ data, ledger, run }: Props) {
                       <tr key={i}>
                         <td>{line.qb_id_parent}</td>
                         <td>
-                          {line.value === null ? "Undecoded" : line.value}
+                          {line.value === null ? tr("Undecoded") : line.value}
                         </td>
                         <td>{line.value_undecoded}</td>
                         <td>{line.txn_date_raw ?? "Unknown"}</td>
@@ -227,17 +239,17 @@ function BookImport({ data, ledger, run }: Props) {
                   )
                 }
               >
-                Export inspected fields
+                {tr("Export inspected fields")}
               </button>
             </>
           ) : (
             <>
               <label>
-                Stable source book ID
+                {tr("Stable source book ID")}
                 <input
                   value={bookId}
                   maxLength={80}
-                  placeholder="my-old-company"
+                  placeholder={tr("my-old-company")}
                   onChange={(event) => {
                     setBookId(event.target.value);
                     setReviewed(false);
@@ -245,11 +257,12 @@ function BookImport({ data, ledger, run }: Props) {
                 />
               </label>
               <small>
-                Keep this same ID for later exports of this same book. Giving it
-                a different ID can create duplicate drafts.
+                {tr(
+                  "Keep this same ID for later exports of this same book. Giving it a different ID can create duplicate drafts.",
+                )}
               </small>
               <label>
-                Source currency
+                {tr("Source currency")}
                 <select
                   value={currency}
                   disabled={!!book.currency}
@@ -258,7 +271,7 @@ function BookImport({ data, ledger, run }: Props) {
                     setReviewed(false);
                   }}
                 >
-                  <option value="">Confirm the source currency</option>
+                  <option value="">{tr("Confirm the source currency")}</option>
                   {currencies.map((code) => (
                     <option key={code}>{code}</option>
                   ))}
@@ -266,24 +279,29 @@ function BookImport({ data, ledger, run }: Props) {
               </label>
               {currency && currency !== data.settings.currency && (
                 <p role="alert">
-                  Source is {currency}; this ledger is {data.settings.currency}.
-                  Import is blocked. No currency conversion is applied.
+                  {tr("Source is ")}
+                  {currency}
+                  {tr("; this ledger is ")}
+                  {data.settings.currency}
+                  {tr(
+                    ". Import is blocked. No currency conversion is applied.",
+                  )}
                 </p>
               )}
-              <h3>Map accounts by meaning</h3>
+              <h3>{tr("Map accounts by meaning")}</h3>
               <p>
-                Create any missing account in Chart of accounts, then return and
-                inspect the file again. No account mapping is selected
-                automatically.
+                {tr(
+                  "Create any missing account in Chart of accounts, then return and inspect the file again. No account mapping is selected automatically.",
+                )}
               </p>
               {book.accounts
                 .filter((account) => used.has(account.id))
                 .map((account) => (
                   <label key={account.id}>
                     {account.code} · {account.name} ·{" "}
-                    {account.type || "source type unspecified"}
+                    {tr(account.type || "source type unspecified")}
                     <select
-                      aria-label={`Map ${account.name}`}
+                      aria-label={tr("Map account") + ": " + account.name}
                       value={mapping[account.id] || ""}
                       onChange={(event) => {
                         setMapping((current) => ({
@@ -293,7 +311,9 @@ function BookImport({ data, ledger, run }: Props) {
                         setReviewed(false);
                       }}
                     >
-                      <option value="">Choose the matching account</option>
+                      <option value="">
+                        {tr("Choose the matching account")}
+                      </option>
                       {data.accounts
                         .filter(
                           (target) =>
@@ -301,14 +321,15 @@ function BookImport({ data, ledger, run }: Props) {
                         )
                         .map((target) => (
                           <option key={target.id} value={target.id}>
-                            {target.code} · {target.name} · {target.type}
+                            {target.code} · {accountLabel(target)} ·{" "}
+                            {tr(target.type)}
                           </option>
                         ))}
                     </select>
                   </label>
                 ))}
-              {mappingError && <p role="status">{mappingError}</p>}
-              <h3>Journal preview · first 10</h3>
+              {mappingError && <p role="status">{tr(mappingError)}</p>}
+              <h3>{tr("Journal preview · first 10")}</h3>
               {mapped.slice(0, 10).map((entry) => (
                 <article key={entry.sourceId} className="note">
                   <strong>
@@ -317,20 +338,20 @@ function BookImport({ data, ledger, run }: Props) {
                   {entry.lines.map((line, i) => (
                     <div className="statement-row" key={i}>
                       <span>
-                        {
+                        {accountLabel(
                           data.accounts.find(
                             (account) => account.id === line.accountId,
-                          )?.name
-                        }
+                          ),
+                        )}
                       </span>
                       <span>
-                        Dr{" "}
-                        {formatMoney(
+                        {tr("Dr")}{" "}
+                        {uiMoney(
                           line.debit,
                           currency || data.settings.currency,
                         )}{" "}
-                        · Cr{" "}
-                        {formatMoney(
+                        {tr("· Cr")}{" "}
+                        {uiMoney(
                           line.credit,
                           currency || data.settings.currency,
                         )}
@@ -345,8 +366,9 @@ function BookImport({ data, ledger, run }: Props) {
                   checked={reviewed}
                   onChange={(event) => setReviewed(event.target.checked)}
                 />{" "}
-                I reviewed the source currency, account mappings, warnings and
-                complete source records. Create drafts only.
+                {tr(
+                  "I reviewed the source currency, account mappings, warnings and complete source records. Create drafts only.",
+                )}
               </label>
               <button
                 disabled={
@@ -364,8 +386,7 @@ function BookImport({ data, ledger, run }: Props) {
                   setError("");
                   try {
                     let result:
-                      | { imported: number; skipped: number }
-                      | undefined;
+                      { imported: number; skipped: number } | undefined;
                     const ok = await run(async () => {
                       result = await ledger.importExternalDrafts(
                         book.format,
@@ -376,7 +397,13 @@ function BookImport({ data, ledger, run }: Props) {
                     }, "External journals saved as drafts. Review before posting.");
                     if (ok && result) {
                       setNotice(
-                        `${result.imported} drafts imported; ${result.skipped} existing source IDs skipped.`,
+                        message(
+                          "{imported} imported · {skipped} already present",
+                          {
+                            imported: uiNumber(result.imported),
+                            skipped: uiNumber(result.skipped),
+                          },
+                        ),
                       );
                       setReviewed(false);
                     }
@@ -387,27 +414,29 @@ function BookImport({ data, ledger, run }: Props) {
                   }
                 }}
               >
-                Import {mapped.length} reviewed drafts
+                {tr("Import ")}
+                {mapped.length} {tr(" reviewed drafts")}
               </button>
               {mapped.length > 500 && (
                 <p role="alert">
-                  Import supports at most 500 journals per batch. Export a
-                  smaller source scope.
+                  {tr(
+                    "Import supports at most 500 journals per batch. Export a smaller source scope.",
+                  )}
                 </p>
               )}
             </>
           )}
           {!!book.documents.length && (
             <>
-              <h3>Source receivables / payables aging · read only</h3>
+              <h3>{tr("Source receivables / payables aging · read only")}</h3>
               <p>
-                This report reads the source documents and dated payments. It
-                does not create editable invoices or bills in your AI Accounting
-                ledger.
+                {tr(
+                  "This report reads the source documents and dated payments. It does not create editable invoices or bills in your AI Accounting ledger.",
+                )}
               </p>
               <div className="form-grid">
                 <label>
-                  As of
+                  {tr("As of")}
                   <input
                     type="date"
                     value={asOf}
@@ -415,31 +444,33 @@ function BookImport({ data, ledger, run }: Props) {
                   />
                 </label>
                 <label>
-                  Documents
+                  {tr("Documents")}
                   <select
                     value={kind}
                     onChange={(event) =>
                       setKind(event.target.value as typeof kind)
                     }
                   >
-                    <option value="invoice">Customer invoices</option>
-                    <option value="bill">Supplier bills</option>
+                    <option value="invoice">{tr("Customer invoices")}</option>
+                    <option value="bill">{tr("Supplier bills")}</option>
                   </select>
                 </label>
               </div>
-              {agingError && <p role="alert">{agingError}</p>}
+              {agingError && <p role="alert">{tr(agingError)}</p>}
               {aging && (
                 <>
                   <div className="statement-row">
-                    <strong>Outstanding</strong>
+                    <strong>{tr("Outstanding")}</strong>
                     <strong>
-                      {formatMoney(aging.total, book.currency || "USD")}
+                      {uiMoney(aging.total, book.currency || "USD")}
                     </strong>
                   </div>
                   {Object.entries(aging.buckets).map(([name, amount]) => (
                     <div className="statement-row" key={name}>
-                      <span>{name} days</span>
-                      <span>{formatMoney(amount, book.currency || "USD")}</span>
+                      <span>
+                        {tr(name)} {tr(" days")}
+                      </span>
+                      <span>{uiMoney(amount, book.currency || "USD")}</span>
                     </div>
                   ))}
                 </>
@@ -453,6 +484,7 @@ function BookImport({ data, ledger, run }: Props) {
 }
 
 function Skills({ data, ledger, run }: Props) {
+  useLanguage();
   const [skillId, setSkillId] = useState<string>(ACCOUNTING_SKILLS[0].id),
     [amount, setAmount] = useState("100.00"),
     [date, setDate] = useState(today()),
@@ -488,34 +520,34 @@ function Skills({ data, ledger, run }: Props) {
   } catch (e) {
     shareError = (e as Error).message;
   }
-  const money = (value: number) => formatMoney(value, data.settings.currency);
+  const money = (value: number) => uiMoney(value, data.settings.currency);
   return (
     <div className="settings-layout">
       <section className="panel padded">
-        <h2>Accounting patterns to review</h2>
+        <h2>{tr("Accounting patterns to review")}</h2>
         <p>
-          Adapted guidance and exact allocation/costing policies from the
-          MIT-licensed Ledger Reborn engine. Drafts use this ledger's currency
-          and need review before posting.
+          {tr(
+            "Adapted guidance and exact allocation/costing policies from the MIT-licensed Ledger Reborn engine. Drafts use this ledger's currency and need review before posting.",
+          )}
         </p>
         <label>
-          What happened?
+          {tr("What happened?")}
           <select
             value={skillId}
             onChange={(event) => setSkillId(event.target.value)}
           >
             {ACCOUNTING_SKILLS.map((item) => (
               <option value={item.id} key={item.id}>
-                {item.title}
+                {tr(item.title)}
               </option>
             ))}
           </select>
         </label>
-        <p>{skill.explanation}</p>
-        <p className="note">{skill.checks}</p>
+        <p>{tr(skill.explanation)}</p>
+        <p className="note">{tr(skill.checks)}</p>
         <div className="form-grid">
           <label>
-            Date
+            {tr("Date")}
             <input
               type="date"
               value={date}
@@ -523,7 +555,7 @@ function Skills({ data, ledger, run }: Props) {
             />
           </label>
           <label>
-            Amount
+            {tr("Amount")}
             <input
               inputMode="decimal"
               value={amount}
@@ -532,12 +564,16 @@ function Skills({ data, ledger, run }: Props) {
           </label>
         </div>
         <p>
-          Debit{" "}
-          {data.accounts.find((account) => account.id === skill.debit)?.name} ·
-          Credit{" "}
-          {data.accounts.find((account) => account.id === skill.credit)?.name}
+          {tr("Debit")}{" "}
+          {accountLabel(
+            data.accounts.find((account) => account.id === skill.debit),
+          )}{" "}
+          {tr(" · Credit")}{" "}
+          {accountLabel(
+            data.accounts.find((account) => account.id === skill.credit),
+          )}
         </p>
-        {error && <p role="alert">{error}</p>}
+        {error && <p role="alert">{tr(error)}</p>}
         <button
           disabled={busy || !!error}
           onClick={async () => {
@@ -560,72 +596,76 @@ function Skills({ data, ledger, run }: Props) {
             }
           }}
         >
-          Create reviewed-pattern draft
+          {tr("Create reviewed-pattern draft")}
         </button>
       </section>
       <section className="panel padded">
-        <h2>Exact accounting calculators</h2>
-        <h3>Moving weighted-average stock cost</h3>
+        <h2>{tr("Exact accounting calculators")}</h2>
+        <h3>{tr("Moving weighted-average stock cost")}</h3>
         <label>
-          Quantity on hand
+          {tr("Quantity on hand")}
           <input
             value={quantity}
             onChange={(event) => setQuantity(event.target.value)}
           />
         </label>
         <label>
-          Total stock value
+          {tr("Total stock value")}
           <input
             value={stockValue}
             onChange={(event) => setStockValue(event.target.value)}
           />
         </label>
         <label>
-          Quantity sold
+          {tr("Quantity sold")}
           <input
             value={sold}
             onChange={(event) => setSold(event.target.value)}
           />
         </label>
         {costError ? (
-          <p role="alert">{costError}</p>
+          <p role="alert">{tr(costError)}</p>
         ) : (
           cost && (
             <p>
-              Cost of goods sold: <strong>{money(cost.cost)}</strong>
+              {tr("Cost of goods sold: ")}
+              <strong>{money(cost.cost)}</strong>
               <br />
-              Remaining value: {money(cost.remainingValue)} · Quantity:{" "}
+              {tr("Remaining value: ")}
+              {money(cost.remainingValue)} {tr(" · Quantity:")}{" "}
               {cost.remainingQuantity}
             </p>
           )
         )}
         <p className="note">
-          Calculator only. It does not maintain stock quantities or post
-          cost-of-sales journals.
+          {tr(
+            "Calculator only. It does not maintain stock quantities or post cost-of-sales journals.",
+          )}
         </p>
-        <h3>Allocate a payment without losing cents</h3>
+        <h3>{tr("Allocate a payment without losing cents")}</h3>
         <label>
-          Payment amount
+          {tr("Payment amount")}
           <input
             value={payment}
             onChange={(event) => setPayment(event.target.value)}
           />
         </label>
         <label>
-          Relative weights, separated by commas
+          {tr("Relative weights, separated by commas")}
           <input
             value={weights}
             onChange={(event) => setWeights(event.target.value)}
           />
         </label>
         {shareError ? (
-          <p role="alert">{shareError}</p>
+          <p role="alert">{tr(shareError)}</p>
         ) : (
           <p>{shares.map(money).join(" + ")}</p>
         )}
         <p className="note">
-          Preview only; this does not allocate payments to actual invoice
-          records.
+          {tr(
+            "Preview only; this does not allocate payments to actual invoice records.",
+          )}
         </p>
       </section>
     </div>
@@ -633,6 +673,7 @@ function Skills({ data, ledger, run }: Props) {
 }
 
 function Catalog() {
+  useLanguage();
   const [catalog, setCatalog] = useState<{
     count: number;
     scope: string;
@@ -669,28 +710,30 @@ function Catalog() {
     ) || [];
   return (
     <section className="panel padded">
-      <h2>Accounting source catalog</h2>
+      <h2>{tr("Accounting source catalog")}</h2>
       <p>
         {catalog
-          ? `${catalog.count} unique repositories · checked 27 November 2026`
-          : "Loading catalog…"}
+          ? message("{count} unique repositories · checked 27 November 2026", {
+              count: uiNumber(catalog.count),
+            })
+          : tr("Loading catalog…")}
       </p>
-      <p>{catalog?.scope}</p>
+      <p>{tr(catalog?.scope)}</p>
       <label>
-        Find a project or license
+        {tr("Find a project or license")}
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
       </label>
-      {error && <p role="alert">{error}</p>}
+      {error && <p role="alert">{tr(error)}</p>}
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Repository</th>
-              <th>License signal</th>
-              <th>Use in this app</th>
+              <th>{tr("Repository")}</th>
+              <th>{tr("License signal")}</th>
+              <th>{tr("Use in this app")}</th>
             </tr>
           </thead>
           <tbody>
@@ -707,11 +750,11 @@ function Catalog() {
                   <small>{entry.language}</small>
                 </td>
                 <td>
-                  {entry.status}
+                  {tr(entry.status)}
                   <small>
                     {entry.codeCopied
-                      ? "Pinned source and license retained"
-                      : "Code not copied"}
+                      ? tr("Pinned source and license retained")
+                      : tr("Code not copied")}
                   </small>
                 </td>
               </tr>
@@ -720,9 +763,9 @@ function Catalog() {
         </table>
       </div>
       <p className="note">
-        License metadata is a starting point. Custom and module-specific terms
-        need review. Catalogued projects are not installed or merged into this
-        runtime.
+        {tr(
+          "License metadata is a starting point. Custom and module-specific terms need review. Catalogued projects are not installed or merged into this runtime.",
+        )}
       </p>
     </section>
   );

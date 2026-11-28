@@ -1,3 +1,4 @@
+import { t as tr, useLanguage, accountLabel } from "../lib/i18n";
 import { useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
@@ -39,16 +40,17 @@ export default function JournalTable({
   post: (j: Journal) => void;
   reverse: (j: Journal) => void;
 }) {
+  useLanguage();
   return (
     <div className="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Transaction</th>
-            <th>Date</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Actions</th>
+            <th>{tr("Transaction")}</th>
+            <th>{tr("Date")}</th>
+            <th>{tr("Amount")}</th>
+            <th>{tr("Status")}</th>
+            <th>{tr("Actions")}</th>
           </tr>
         </thead>
         <tbody>
@@ -58,9 +60,10 @@ export default function JournalTable({
                 <strong>{j.description}</strong>
                 <small>
                   {j.lines
-                    .map(
-                      (l) =>
-                        data.accounts.find((a) => a.id === l.accountId)?.name,
+                    .map((l) =>
+                      accountLabel(
+                        data.accounts.find((a) => a.id === l.accountId),
+                      ),
                     )
                     .join(" → ")}
                 </small>
@@ -70,22 +73,22 @@ export default function JournalTable({
                 {money(j.lines.reduce((n, l) => n + l.debit, 0))}
               </td>
               <td>
-                <span className={"chip " + j.status}>{j.status}</span>
-                {j.reversalOf && <small>Reversal</small>}
+                <span className={"chip " + j.status}>{tr(j.status)}</span>
+                {j.reversalOf && <small>{tr("Reversal")}</small>}
               </td>
               <td>
                 {j.status === "draft" ? (
                   <>
                     <button className="text-btn" onClick={() => edit(j)}>
-                      Edit
+                      {tr("Edit")}
                     </button>
                     <button className="mini-btn" onClick={() => post(j)}>
-                      Post
+                      {tr("Post")}
                     </button>
                   </>
                 ) : (
                   <button className="text-btn" onClick={() => reverse(j)}>
-                    Reverse
+                    {tr("Reverse")}
                   </button>
                 )}
               </td>

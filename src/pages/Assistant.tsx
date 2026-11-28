@@ -1,3 +1,10 @@
+import {
+  t as tr,
+  useLanguage,
+  accountLabel,
+  message,
+  getLanguage,
+} from "../lib/i18n";
 import { useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
@@ -103,6 +110,7 @@ const flows = [
   },
 ];
 export default function Assistant({ data, selectAccount }: any) {
+  useLanguage();
   const [flow, setFlow] = useState(0);
   const [selection, setSelection] = useState(-1);
   const [status, setStatus] = useState<{
@@ -130,17 +138,20 @@ export default function Assistant({ data, selectAccount }: any) {
     <div className="assistant-layout">
       <section className="panel padded">
         <span className="guide-pill">
-          <Sparkles size={14} /> GUIDED RULES ·{" "}
-          {data.settings.guidance ? "ON" : "OFF"}
+          <Sparkles size={14} /> {tr(" GUIDED RULES ·")}{" "}
+          {data.settings.guidance ? tr("ON") : tr("OFF")}
         </span>
-        <h2>Let’s understand the transaction.</h2>
+        <h2>{tr("Let’s understand the transaction.")}</h2>
         <p className="muted">
-          Choose what happened, then the explanation that matches the facts.
+          {tr(
+            "Choose what happened, then the explanation that matches the facts.",
+          )}
         </p>
         {!data.settings.guidance ? (
           <div className="note">
-            Guidance is off. Use New entry and select your accounts manually, or
-            turn guidance on in the top bar.
+            {tr(
+              "Guidance is off. Use New entry and select your accounts manually, or turn guidance on in the top bar.",
+            )}
           </div>
         ) : (
           <>
@@ -154,13 +165,13 @@ export default function Assistant({ data, selectAccount }: any) {
                     setSelection(-1);
                   }}
                 >
-                  {f.name}
+                  {tr(f.name)}
                 </button>
               ))}
             </div>
             <div className="question-box">
-              <small>ONE IMPORTANT QUESTION</small>
-              <h3>{f.question}</h3>
+              <small>{tr("ONE IMPORTANT QUESTION")}</small>
+              <h3>{tr(f.question)}</h3>
               {f.options.map(([id, label, reason], i) => (
                 <button
                   key={id}
@@ -168,8 +179,8 @@ export default function Assistant({ data, selectAccount }: any) {
                   onClick={() => setSelection(i)}
                 >
                   <span>
-                    <strong>{label}</strong>
-                    <small>{reason}</small>
+                    <strong>{tr(label)}</strong>
+                    <small>{tr(reason)}</small>
                   </span>
                   <ChevronRight size={17} />
                 </button>
@@ -178,19 +189,20 @@ export default function Assistant({ data, selectAccount }: any) {
             {selection >= 0 && (
               <div className="decision">
                 <b>
-                  Suggested head:{" "}
-                  {
+                  {tr("Suggested head:")}{" "}
+                  {accountLabel(
                     data.accounts.find(
                       (a: Account) => a.id === f.options[selection][0],
-                    )?.name
-                  }
+                    ),
+                  )}
                 </b>
-                <p>{f.options[selection][2]}</p>
+                <p>{tr(f.options[selection][2])}</p>
                 <button onClick={() => selectAccount(f.options[selection][0])}>
-                  Create a draft with this head <Plus size={15} />
+                  {tr("Create a draft with this head ")}
+                  <Plus size={15} />
                 </button>
                 <small>
-                  You will review date, amount and both journal sides.
+                  {tr("You will review date, amount and both journal sides.")}
                 </small>
               </div>
             )}
@@ -198,11 +210,12 @@ export default function Assistant({ data, selectAccount }: any) {
         )}
       </section>
       <aside className="panel padded ai-box">
-        <span className="eyebrow">OPTIONAL · NO PAID API</span>
-        <h2>Connect your local AI</h2>
+        <span className="eyebrow">{tr("OPTIONAL · NO PAID API")}</span>
+        <h2>{tr("Connect your local AI")}</h2>
         <p>
-          Ollama runs a downloaded model on your own computer. Your chosen
-          question and account context stay local.
+          {tr(
+            "Ollama runs a downloaded model on your own computer. Your chosen question and account context stay local.",
+          )}
         </p>
         <div
           className={
@@ -212,16 +225,16 @@ export default function Assistant({ data, selectAccount }: any) {
         >
           <span className="small-dot" />
           {status.available && status.models.length > 0
-            ? "Local model available"
-            : status.reason}
+            ? tr("Local model available")
+            : tr(status.reason)}
         </div>
         <button className="secondary" onClick={connect}>
-          Check connection
+          {tr("Check connection")}
         </button>
         {status.available && status.models.length > 0 ? (
           <>
             <label>
-              Installed model
+              {tr("Installed model")}
               <select value={model} onChange={(e) => setModel(e.target.value)}>
                 {status.models.map((m) => (
                   <option key={m}>{m}</option>
@@ -229,11 +242,13 @@ export default function Assistant({ data, selectAccount }: any) {
               </select>
             </label>
             <label>
-              Question
+              {tr("Question")}
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Describe the facts, not just an account name."
+                placeholder={tr(
+                  "Describe the facts, not just an account name.",
+                )}
               />
             </label>
             <button
@@ -251,6 +266,7 @@ export default function Assistant({ data, selectAccount }: any) {
                       model,
                       messages: [{ role: "user", content: text }],
                       context: {
+                        language: getLanguage(),
                         country: data.settings.country,
                         framework: data.settings.framework,
                         accounts: data.accounts,
@@ -267,20 +283,22 @@ export default function Assistant({ data, selectAccount }: any) {
                 }
               }}
             >
-              {busy ? "Thinking locally…" : "Ask local AI"}
+              {busy ? tr("Thinking locally…") : tr("Ask local AI")}
             </button>
           </>
         ) : (
           <div className="note">
-            In this online Preview, use guided rules. To use AI, download the
-            repository, install Ollama and a local model, then run{" "}
-            <code>pnpm local</code>. This page will not contact a paid provider.
+            {tr(
+              "In this online Preview, use guided rules. To use AI, download the repository, install Ollama and a local model, then run",
+            )}{" "}
+            <code>{tr("pnpm local")}</code>
+            {tr(". This page will not contact a paid provider.")}
           </div>
         )}
-        {error && <p className="error-text">{error}</p>}
+        {error && <p className="error-text">{tr(error)}</p>}
         {answer && (
           <div className="ai-answer">
-            <b>AI draft — review required</b>
+            <b>{tr("AI draft — review required")}</b>
             <p>{answer.explanation}</p>
             {answer.questions?.map((q: string, i: number) => (
               <p key={i}>{q}</p>
@@ -288,25 +306,25 @@ export default function Assistant({ data, selectAccount }: any) {
             {answer.options?.map((o: any, i: number) => (
               <div key={i}>
                 <b>
-                  {
-                    data.accounts.find((a: Account) => a.id === o.accountId)
-                      ?.name
-                  }
+                  {accountLabel(
+                    data.accounts.find((a: Account) => a.id === o.accountId),
+                  )}
                 </b>
                 <p>{o.reason}</p>
                 <button
                   className="text-btn"
                   onClick={() => selectAccount(o.accountId)}
                 >
-                  Use in a draft
+                  {tr("Use in a draft")}
                 </button>
               </div>
             ))}
           </div>
         )}
         <small>
-          Models can be wrong. They are not certified accountants. No automatic
-          posting.
+          {tr(
+            "Models can be wrong. They are not certified accountants. No automatic posting.",
+          )}
         </small>
       </aside>
     </div>

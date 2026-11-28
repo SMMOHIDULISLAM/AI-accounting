@@ -1,3 +1,4 @@
+import { t as tr, useLanguage } from "../lib/i18n";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
@@ -24,7 +25,13 @@ import { parseMoney, report } from "../lib/accounting";
 import { parseCSV, mapCSV, exportCSV } from "../lib/csv";
 import type { Snapshot, Line, Journal, SourceRow, Account } from "../lib/types";
 import { today, saveFile } from "../components/utils";
-export default function SettingsPanel({ data, run, ledger }: any) {
+export default function SettingsPanel({
+  data,
+  run,
+  ledger,
+  cloud = false,
+}: any) {
+  useLanguage();
   const [name, setName] = useState(data.settings.name);
   const [currency, setCurrency] = useState(data.settings.currency);
   const [country, setCountry] = useState(data.settings.country);
@@ -51,9 +58,9 @@ export default function SettingsPanel({ data, run, ledger }: any) {
           );
         }}
       >
-        <h2>Your workspace</h2>
+        <h2>{tr("Your workspace")}</h2>
         <label>
-          Business name
+          {tr("Business name")}
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -61,7 +68,7 @@ export default function SettingsPanel({ data, run, ledger }: any) {
           />
         </label>
         <label>
-          Reporting currency
+          {tr("Reporting currency")}
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
@@ -72,39 +79,57 @@ export default function SettingsPanel({ data, run, ledger }: any) {
             ))}
           </select>
           <small>
-            Single-currency ledger; select before adding records. No conversion.
+            {tr(
+              "Single-currency ledger; select before adding records. No conversion.",
+            )}
           </small>
         </label>
         <label>
-          Country / jurisdiction context
+          {tr("Country / jurisdiction context")}
           <input value={country} onChange={(e) => setCountry(e.target.value)} />
         </label>
         <label>
-          Desired framework (context only)
+          {tr("Desired framework (context only)")}
           <select
             value={framework}
             onChange={(e) => setFramework(e.target.value)}
           >
-            <option>General accrual bookkeeping</option>
-            <option>IFRS — review required</option>
-            <option>IFRS for SMEs — review required</option>
-            <option>Local GAAP — review required</option>
+            <option value="General accrual bookkeeping">
+              {tr("General accrual bookkeeping")}
+            </option>
+            <option value="IFRS — review required">
+              {tr("IFRS — review required")}
+            </option>
+            <option value="IFRS for SMEs — review required">
+              {tr("IFRS for SMEs — review required")}
+            </option>
+            <option value="Local GAAP — review required">
+              {tr("Local GAAP — review required")}
+            </option>
           </select>
         </label>
         <div className="note">
-          This preference helps describe your needs. It does not install a
-          country's tax or reporting rules. Qualification programs such as CPA,
-          ACCA, CMA and CA are not separate reporting frameworks.
+          {tr(
+            "This preference helps describe your needs. It does not install a country's tax or reporting rules. Qualification programs such as CPA, ACCA, CMA and CA are not separate reporting frameworks.",
+          )}
         </div>
-        <button>Save workspace</button>
+        <button>{tr("Save workspace")}</button>
       </form>
       <section className="panel padded">
-        <ShieldCheck size={28} />
-        <h2>You own your records.</h2>
+        <h2>{tr("Free local edition")}</h2>
         <p>
-          Real SQLite lives in this browser's IndexedDB. There is no cloud
-          ledger sync. Browser storage is not an encrypted vault and can be
-          cleared or evicted.
+          {tr(
+            "No subscription or paid AI API is required for local bookkeeping. Optional live WhatsApp, bank services and hosting have separate requirements and may charge fees.",
+          )}
+        </p>
+        <ShieldCheck size={28} />
+        <h2>{tr("You own your records.")}</h2>
+        <p>
+          {tr(
+            cloud
+              ? "This company ledger is stored in your private cloud workspace. Save a separate SQLite backup. A conflicting session cannot silently overwrite newer changes."
+              : "Real SQLite lives in this browser's IndexedDB. There is no cloud ledger sync. Browser storage is not an encrypted vault and can be cleared or evicted.",
+          )}
         </p>
         <button
           onClick={() =>
@@ -118,15 +143,16 @@ export default function SettingsPanel({ data, run, ledger }: any) {
             }, "SQLite backup downloaded")
           }
         >
-          <Download size={17} /> Download SQLite backup
+          <Download size={17} /> {tr(" Download SQLite backup")}
         </button>
-        <h3>Restore a backup</h3>
+        <h3>{tr("Restore a backup")}</h3>
         <p>
-          Restoring replaces this browser's current ledger. Download a backup
-          first.
+          {tr(
+            "Restoring replaces this browser's current ledger. Download a backup first.",
+          )}
         </p>
         <label className="file-drop">
-          Choose .sqlite backup
+          {tr("Choose .sqlite backup")}
           <input
             type="file"
             accept=".sqlite,.db"
@@ -135,7 +161,9 @@ export default function SettingsPanel({ data, run, ledger }: any) {
               if (!file) return;
               if (
                 confirm(
-                  "Replace this ledger with the chosen backup? Download a current backup first.",
+                  tr(
+                    "Replace this ledger with the chosen backup? Download a current backup first.",
+                  ),
                 )
               )
                 await run(async () => {
@@ -149,11 +177,11 @@ export default function SettingsPanel({ data, run, ledger }: any) {
           />
         </label>
         <div className="note">
-          Backups contain sensitive accounting records. Keep them private. Your
-          private source repository does not store or protect these records
-          automatically.
+          {tr(
+            "Backups contain sensitive accounting records. Keep them private. Your private source repository does not store or protect these records automatically.",
+          )}
         </div>
-        <h3>Local audit history</h3>
+        <h3>{tr("Local audit history")}</h3>
         <div className="audit-list">
           {data.audit
             .slice()
@@ -165,7 +193,7 @@ export default function SettingsPanel({ data, run, ledger }: any) {
                 {a.action}
               </p>
             ))}
-          {!data.audit.length && <p>No actions yet.</p>}
+          {!data.audit.length && <p>{tr("No actions yet.")}</p>}
         </div>
       </section>
     </div>

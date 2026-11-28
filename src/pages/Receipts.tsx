@@ -1,3 +1,4 @@
+import { t as tr, useLanguage, accountLabel, message } from "../lib/i18n";
 import { useEffect, useState } from "react";
 import type { Ledger } from "../lib/db";
 import type { Snapshot } from "../lib/types";
@@ -15,6 +16,7 @@ export default function Receipts({
   ledger: Ledger;
   run: (fn: () => Promise<unknown>, notice?: string) => Promise<boolean>;
 }) {
+  useLanguage();
   const [file, setFile] = useState<File>(),
     [available, setAvailable] = useState(false),
     [busy, setBusy] = useState(false),
@@ -51,19 +53,21 @@ export default function Receipts({
   return (
     <div className="settings-layout">
       <section className="panel padded">
-        <h2>Read a cash memo locally</h2>
+        <h2>{tr("Read a cash memo locally")}</h2>
         <p>
-          English OCR uses Tesseract on this computer. The image is sent only to
-          your local app server and is not saved by this endpoint. Check every
-          extracted field against the memo.
+          {tr(
+            "English OCR uses Tesseract on this computer. The image is sent only to your local app server and is not saved by this endpoint. Check every extracted field against the memo.",
+          )}
         </p>
         <p role="status">
           {available
-            ? "Local English OCR is ready."
-            : "Local OCR is unavailable. Start in local mode with Tesseract, or paste the memo text below."}
+            ? tr("Local English OCR is ready.")
+            : tr(
+                "Local OCR is unavailable. Start in local mode with Tesseract, or paste the memo text below.",
+              )}
         </p>
         <label>
-          Receipt image · PNG/JPEG, up to 8 MB
+          {tr("Receipt image · PNG/JPEG, up to 8 MB")}
           <input
             type="file"
             accept="image/png,image/jpeg"
@@ -113,10 +117,10 @@ export default function Receipts({
             }
           }}
         >
-          {busy ? "Reading locally…" : "Read receipt"}
+          {busy ? tr("Reading locally…") : tr("Read receipt")}
         </button>
         <label>
-          Memo text / OCR output
+          {tr("Memo text / OCR output")}
           <textarea
             rows={12}
             value={text}
@@ -128,43 +132,43 @@ export default function Receipts({
         </label>
         {candidates.totals.length > 1 && (
           <p className="note">
-            Multiple totals were found. Select the correct amount from the
-            original document yourself.
+            {tr(
+              "Multiple totals were found. Select the correct amount from the original document yourself.",
+            )}
           </p>
         )}
         <p className="note">
-          OCR is not an accounting decision. Bengali handwriting, tax splits,
-          supplier matching and duplicate receipt detection are not verified by
-          this feature. Images received through WhatsApp still require a
-          media-download integration.
+          {tr(
+            "OCR is not an accounting decision. Bengali handwriting, tax splits, supplier matching and duplicate receipt detection are not verified by this feature. Images received through WhatsApp still require a media-download integration.",
+          )}
         </p>
         {error && (
           <p className="alert error" role="alert">
-            {error}
+            {tr(error)}
           </p>
         )}
       </section>
       <section className="panel padded">
-        <h2>Review the accounting effect</h2>
+        <h2>{tr("Review the accounting effect")}</h2>
         <p>
-          Choose the actual debit and credit accounts. A sale, a purchase and
-          settling an existing invoice have different effects. This creates a
-          draft only.
+          {tr(
+            "Choose the actual debit and credit accounts. A sale, a purchase and settling an existing invoice have different effects. This creates a draft only.",
+          )}
         </p>
         <label>
-          What happened?
+          {tr("What happened?")}
           <input
             value={description}
             onChange={(event) => {
               setDescription(event.target.value);
               setReviewed(false);
             }}
-            placeholder="Describe the transaction"
+            placeholder={tr("Describe the transaction")}
           />
         </label>
         <div className="form-grid">
           <label>
-            Date
+            {tr("Date")}
             <input
               type="date"
               value={date}
@@ -175,7 +179,7 @@ export default function Receipts({
             />
           </label>
           <label>
-            Amount
+            {tr("Amount")}
             <input
               value={amount}
               inputMode="decimal"
@@ -187,7 +191,7 @@ export default function Receipts({
           </label>
         </div>
         <label>
-          Confirm memo currency
+          {tr("Confirm memo currency")}
           <select
             value={currency}
             onChange={(event) => {
@@ -195,7 +199,7 @@ export default function Receipts({
               setReviewed(false);
             }}
           >
-            <option value="">Choose from the original memo</option>
+            <option value="">{tr("Choose from the original memo")}</option>
             {["BDT", "USD", "GBP", "EUR", "CAD", "INR", "AUD"].map((code) => (
               <option key={code}>{code}</option>
             ))}
@@ -203,8 +207,11 @@ export default function Receipts({
         </label>
         {currency && currency !== data.settings.currency && (
           <p role="alert">
-            This memo is {currency}; the ledger is {data.settings.currency}. No
-            conversion is applied.
+            {tr("This memo is ")}
+            {currency}
+            {tr("; the ledger is ")}
+            {data.settings.currency}
+            {tr(". No conversion is applied.")}
           </p>
         )}
         {[
@@ -220,24 +227,25 @@ export default function Receipts({
                 setReviewed(false);
               }}
             >
-              <option value="">Choose an account</option>
+              <option value="">{tr("Choose an account")}</option>
               {data.accounts.map((account) => (
                 <option value={account.id} key={account.id}>
-                  {account.code} · {account.name} · {account.type}
+                  {account.code} · {accountLabel(account)} · {tr(account.type)}
                 </option>
               ))}
             </select>
           </label>
         ))}
-        {amountError && <p role="alert">{amountError}</p>}
+        {amountError && <p role="alert">{tr(amountError)}</p>}
         <label className="integration-check">
           <input
             type="checkbox"
             checked={reviewed}
             onChange={(event) => setReviewed(event.target.checked)}
           />{" "}
-          I checked the original memo, amount, currency, date, duplicates and
-          both account effects.
+          {tr(
+            "I checked the original memo, amount, currency, date, duplicates and both account effects.",
+          )}
         </label>
         <button
           disabled={
@@ -273,7 +281,7 @@ export default function Receipts({
             }
           }}
         >
-          Save memo draft
+          {tr("Save memo draft")}
         </button>
       </section>
     </div>

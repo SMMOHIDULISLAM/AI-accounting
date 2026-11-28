@@ -1,3 +1,4 @@
+import { t as tr, useLanguage } from "../lib/i18n";
 import { useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
@@ -32,6 +33,7 @@ export default function Transactions({
   run,
   ledger,
 }: any) {
+  useLanguage();
   const [tab, setTab] = useState("inbox");
   const [search, setSearch] = useState("");
   const list = data.journals.filter(
@@ -49,16 +51,16 @@ export default function Transactions({
             onClick={() => setTab(t)}
           >
             {t === "inbox"
-              ? "Imported inbox"
+              ? tr("Imported inbox")
               : t === "drafts"
-                ? "Draft journals"
-                : "Posted ledger"}
+                ? tr("Draft journals")
+                : tr("Posted ledger")}
           </button>
         ))}
         <div className="search">
           <Search size={16} />
           <input
-            placeholder="Search descriptions"
+            placeholder={tr("Search descriptions")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -82,14 +84,17 @@ export default function Transactions({
                 </div>
                 <span className="numeric">{money(s.amount)}</span>
                 <span className="chip">
-                  {s.journalId ? "Linked draft / entry" : "Needs review"}
+                  {s.journalId
+                    ? tr("Linked draft / entry")
+                    : tr("Needs review")}
                 </span>
                 <button
                   className="secondary"
                   disabled={!!s.journalId}
                   onClick={() => journal(s)}
                 >
-                  Classify <ChevronRight size={14} />
+                  {tr("Classify ")}
+                  <ChevronRight size={14} />
                 </button>
               </div>
             ))}
@@ -97,8 +102,8 @@ export default function Transactions({
             .length && (
             <div className="empty">
               <Upload />
-              <h3>Your inbox is clear</h3>
-              <p>Import a CSV to review transactions here.</p>
+              <h3>{tr("Your inbox is clear")}</h3>
+              <p>{tr("Import a CSV to review transactions here.")}</p>
             </div>
           )}
         </div>
@@ -110,7 +115,7 @@ export default function Transactions({
           edit={(j) => journal(undefined, j)}
           post={(j) => run(() => ledger.post(j.id), "Posted")}
           reverse={(j) => {
-            const reason = prompt("Why are you reversing this entry?");
+            const reason = prompt(tr("Why are you reversing this entry?"));
             if (reason) run(() => ledger.reverse(j.id, reason));
           }}
         />

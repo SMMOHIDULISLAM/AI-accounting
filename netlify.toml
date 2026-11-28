@@ -1,0 +1,22 @@
+"$schema" = "https://open-api.netlify.com/netlify.schema.json"
+[build]
+  command = "pnpm build:cloud"
+  publish = "dist-cloud"
+[build.environment]
+  NODE_VERSION = "24"
+[[redirects]]
+  from = "/api/*"
+  to = "/unavailable.json"
+  status = 404
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    X-Frame-Options = "DENY"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"

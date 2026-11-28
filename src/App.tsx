@@ -1,3 +1,11 @@
+import {
+  t as tr,
+  useLanguage,
+  uiMoney,
+  uiNumber,
+  locale,
+  message,
+} from "./lib/i18n";
 import SettingsPanel from "./pages/SettingsPanel";
 import Assistant from "./pages/Assistant";
 import Reports from "./pages/Reports";
@@ -10,7 +18,11 @@ import WhatsAppInbox from "./pages/WhatsAppInbox";
 import Integrations from "./pages/Integrations";
 import Receipts from "./pages/Receipts";
 import JournalTable from "./components/JournalTable";
-import { useEffect, useState, type ReactNode } from "react";
+import LanguageSwitch from "./components/LanguageSwitch";
+import SponsorCard from "./components/SponsorCard";
+import TelegramInbox from "./pages/TelegramInbox";
+import { useEffect, useState, lazy, Suspense, type ReactNode } from "react";
+import type { OperationsStorage } from "./lib/operations-store";
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -33,17 +45,20 @@ import {
   MessageCircle,
   Database,
   Receipt,
+  Factory,
 } from "lucide-react";
 import { Ledger } from "./lib/db";
-import { parseMoney, report, formatMoney } from "./lib/accounting";
+import { parseMoney, report } from "./lib/accounting";
 import { today } from "./components/utils";
 import { parseCSV, mapCSV, exportCSV } from "./lib/csv";
 import type { Snapshot, Line, Journal, SourceRow, Account } from "./lib/types";
 
 const navigation = [
   ["/", "Overview", LayoutDashboard],
+  ["/operations", "Business operations", Factory],
   ["/transactions", "Transactions", ArrowLeftRight],
   ["/whatsapp", "My Accounts · WhatsApp", MessageCircle],
+  ["/telegram", "Telegram inbox", MessageCircle],
   ["/integrations", "Imports & skills", Database],
   ["/receipts", "Cash memos", Receipt],
   ["/accounts", "Chart of accounts", BookOpen],
@@ -61,7 +76,19 @@ function saveFile(name: string, bytes: BlobPart, type = "text/csv") {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 let opening: Promise<Ledger> | undefined;
-export default function App() {
+const Operations = lazy(() => import("./pages/Operations"));
+export default function App({
+  ledgerOverride,
+  cloudCompany,
+  onSignOut,
+  operationsStorage,
+}: {
+  ledgerOverride?: Ledger;
+  cloudCompany?: { name: string; trial_ends_at: string };
+  onSignOut?: () => void;
+  operationsStorage?: OperationsStorage;
+} = {}) {
+  useLanguage();
   const [ledger, setLedger] = useState<Ledger>();
   const [data, setData] = useState<Snapshot>();
   const [error, setError] = useState("");
@@ -70,8 +97,10 @@ export default function App() {
   const [modal, setModal] = useState<ReactNode>();
   const [mobile, setMobile] = useState(false);
   useEffect(() => {
-    opening ??= Ledger.open();
-    opening
+    const source = ledgerOverride
+      ? Promise.resolve(ledgerOverride)
+      : (opening ??= Ledger.open());
+    source
       .then((l) => {
         setLedger(l);
         setData(l.snapshot());
@@ -80,7 +109,7 @@ export default function App() {
     const pop = () => setPath(location.pathname);
     window.addEventListener("popstate", pop);
     return () => window.removeEventListener("popstate", pop);
-  }, []);
+  }, [ledgerOverride]);
   const go = (p: string) => {
     history.pushState({}, "", p);
     setPath(p);
@@ -102,7 +131,7 @@ export default function App() {
       return false;
     }
   };
-  const money = (n: number) => formatMoney(n, data?.settings.currency || "BDT");
+  const money = (n: number) => uiMoney(n, data?.settings.currency || "BDT");
   const journal = (source?: SourceRow, existing?: Journal) =>
     setModal(
       <JournalEditor
@@ -140,9 +169,12 @@ export default function App() {
     return (
       <div className="loading">
         <img src="/logo.svg" width="55" />
-        <h1>AI Accounting</h1>
-        <p>{error || "Opening your local SQLite ledger…"}</p>
-        {error && <button onClick={() => location.reload()}>Try again</button>}
+        <h1>{tr("AI Accounting")}</h1>
+        <p>{tr(error || "Opening your local SQLite ledger…")}</p>
+        <LanguageSwitch />
+        {error && (
+          <button onClick={() => location.reload()}>{tr("Try again")}</button>
+        )}
       </div>
     );
   const posted = data.journals.filter((j) => j.status === "posted");
@@ -168,7 +200,8 @@ export default function App() {
         >
           <img src="/logo.svg" />
           <span>
-            AI Accounting<small>YOUR BOOKS, UNDERSTOOD</small>
+            {tr("AI Accounting")}
+            <small>{tr("YOUR BOOKS, UNDERSTOOD")}</small>
           </span>
         </a>
         <div className="workspace">
@@ -176,16 +209,24 @@ export default function App() {
             {(data.settings.name || "My business").slice(0, 1)}
           </div>
           <div>
-            <strong>{data.settings.name || "My business"}</strong>
-            <small>Local workspace · {data.settings.currency}</small>
+            <strong>{data.settings.name || tr("My business")}</strong>
+            <small>
+              {tr(
+                cloudCompany
+                  ? "Private cloud workspace · "
+                  : "Local workspace · ",
+              )}
+              {data.settings.currency}
+            </small>
           </div>
         </div>
-        <div className="nav-label">WORKSPACE</div>
+        <div className="nav-label">{tr("WORKSPACE")}</div>
         <nav>
           {navigation.map(([p, t, Icon]) => (
             <a
               key={p}
               href={p}
+              aria-label={tr(t)}
               className={path === p ? "active" : ""}
               onClick={(e) => {
                 e.preventDefault();
@@ -193,27 +234,37 @@ export default function App() {
               }}
             >
               <Icon size={18} />
-              {t}
+              {tr(t)}
               {p === "/transactions" && drafts.length > 0 && (
-                <b>{drafts.length}</b>
+                <b>{uiNumber(drafts.length)}</b>
               )}
             </a>
           ))}
         </nav>
         <div className="sidebar-bottom">
           <ShieldCheck size={19} />
-          <strong>Your data stays here</strong>
+          <strong>
+            {tr(
+              cloudCompany ? "Private company storage" : "Your data stays here",
+            )}
+          </strong>
           <p>
-            SQLite stored in this browser.
+            {tr(
+              cloudCompany
+                ? "Saved to your private cloud company."
+                : "SQLite stored in this browser.",
+            )}
             <br />
-            Back up regularly.
+            {tr("Back up regularly.")}
           </p>
           <button className="text-btn" onClick={() => go("/settings")}>
-            Manage your data <ArrowUpRight size={14} />
+            {tr("Manage your data ")}
+            <ArrowUpRight size={14} />
           </button>
         </div>
         <div className="version">
-          LOCAL WORKSPACE <span>v0.3</span>
+          {tr("LOCAL WORKSPACE ")}
+          <span>v0.5.0</span>
         </div>
       </aside>
       <main>
@@ -221,15 +272,22 @@ export default function App() {
           <button
             className="mobile-menu icon-btn"
             onClick={() => setMobile(!mobile)}
-            aria-label="Toggle navigation"
+            aria-label={tr("Toggle navigation")}
           >
             <Menu />
           </button>
           <span className="breadcrumb">
-            Workspace <ChevronRight size={14} /> <b>{title}</b>
+            {tr("Workspace ")}
+            <ChevronRight size={14} /> <b>{tr(title)}</b>
           </span>
           <div className="top-actions">
-            <span className="local-dot">Local SQLite</span>
+            <LanguageSwitch />
+            {onSignOut && (
+              <button className="text-btn" onClick={onSignOut}>
+                {tr("Sign out")}
+              </button>
+            )}
+            <span className="local-dot">{tr("Local SQLite")}</span>
             <button
               className="guidance-toggle"
               onClick={() =>
@@ -238,50 +296,72 @@ export default function App() {
                 )
               }
             >
-              <Sparkles size={15} /> Guidance{" "}
-              {data.settings.guidance ? "on" : "off"}
+              <Sparkles size={15} /> {tr(" Guidance")}{" "}
+              {data.settings.guidance ? tr("on") : tr("off")}
             </button>
-            <span className="user-avatar">ME</span>
+            <span className="user-avatar">{tr("ME")}</span>
           </div>
         </header>
         <div className="content">
+          <SponsorCard />
+          {cloudCompany && (
+            <div className="note" role="status">
+              {tr(
+                "Private 30-day learning trial. Read/export stays available after expiry. Trial ends:",
+              )}{" "}
+              {new Date(cloudCompany.trial_ends_at).toLocaleDateString(
+                locale(),
+              )}
+            </div>
+          )}
           {error && (
             <div className="alert error" role="alert">
-              {error}
-              <button onClick={() => setError("")} aria-label="Dismiss error">
+              {tr(error)}
+              <button
+                onClick={() => setError("")}
+                aria-label={tr("Dismiss error")}
+              >
                 <X size={16} />
               </button>
             </div>
           )}
           {notice && (
             <div className="alert success" role="status">
-              {notice}
+              {tr(notice)}
             </div>
           )}
           <div className="page-heading">
             <div>
               <div className="eyebrow">
                 {path === "/"
-                  ? "A CLEARER PICTURE"
-                  : "YOUR ACCOUNTING WORKBENCH"}
+                  ? tr("A CLEARER PICTURE")
+                  : tr("YOUR ACCOUNTING WORKBENCH")}
               </div>
-              <h1>{path === "/" ? "Good books. Better decisions." : title}</h1>
+              <h1>
+                {path === "/" ? tr("Good books. Better decisions.") : tr(title)}
+              </h1>
               <p>
                 {path === "/"
-                  ? "Know where your business stands, one explained transaction at a time."
+                  ? tr(
+                      "Know where your business stands, one explained transaction at a time.",
+                    )
                   : path === "/transactions"
-                    ? "Import, understand, and review both sides before posting."
+                    ? tr(
+                        "Import, understand, and review both sides before posting.",
+                      )
                     : path === "/reports"
-                      ? "Clear reports, calculated from your posted ledger."
-                      : "Keep your records understandable and in your control."}
+                      ? tr("Clear reports, calculated from your posted ledger.")
+                      : tr(
+                          "Keep your records understandable and in your control.",
+                        )}
               </p>
             </div>
             <div className="heading-buttons">
               <button className="secondary" onClick={importCSV}>
-                <Upload size={16} /> Import CSV
+                <Upload size={16} /> {tr(" Import CSV")}
               </button>
               <button onClick={() => journal()}>
-                <Plus size={17} /> New entry
+                <Plus size={17} /> {tr(" New entry")}
               </button>
             </div>
           </div>
@@ -289,49 +369,50 @@ export default function App() {
             <>
               <div className="period-line">
                 <span>
-                  THIS MONTH{" "}
+                  {tr("THIS MONTH")}{" "}
                   <b>
-                    {new Date().toLocaleDateString("en", {
+                    {new Date().toLocaleDateString(locale(), {
                       month: "long",
                       year: "numeric",
                     })}
                   </b>
                 </span>
                 <span>
-                  <span className="small-dot" /> Posted entries only
+                  <span className="small-dot" /> {tr(" Posted entries only")}
                 </span>
               </div>
               {reportError && (
                 <p role="alert" className="alert error">
-                  Report unavailable: {reportError}. Your records and backups
-                  remain accessible.
+                  {tr("Report unavailable: ")}
+                  {tr(reportError)}
+                  {tr(". Your records and backups remain accessible.")}
                 </p>
               )}
               {r && (
                 <div className="metrics">
                   <Metric
-                    title="Bank & cash"
+                    title={tr("Bank & cash")}
                     value={money(r.cashBalance)}
                     icon={<ArrowLeftRight />}
-                    foot="Balance as of today"
+                    foot={tr("Balance as of today")}
                   />
                   <Metric
-                    title="Income"
+                    title={tr("Income")}
                     value={money(r.income)}
                     icon={<ArrowDownLeft />}
-                    foot="Earned income this month"
+                    foot={tr("Earned income this month")}
                   />
                   <Metric
-                    title="Expenses"
+                    title={tr("Expenses")}
                     value={money(r.expense)}
                     icon={<ArrowUpRight />}
-                    foot="Costs this month"
+                    foot={tr("Costs this month")}
                   />
                   <Metric
-                    title="Net profit"
+                    title={tr("Net profit")}
                     value={money(r.profit)}
                     icon={<FileText />}
-                    foot="Income less expenses"
+                    foot={tr("Income less expenses")}
                   />
                 </div>
               )}
@@ -339,14 +420,15 @@ export default function App() {
                 <section className="panel ledger-panel">
                   <div className="panel-title">
                     <div>
-                      <h2>Recent activity</h2>
-                      <p>The story behind your numbers</p>
+                      <h2>{tr("Recent activity")}</h2>
+                      <p>{tr("The story behind your numbers")}</p>
                     </div>
                     <button
                       className="text-btn"
                       onClick={() => go("/transactions")}
                     >
-                      All transactions <ArrowUpRight size={15} />
+                      {tr("All transactions ")}
+                      <ArrowUpRight size={15} />
                     </button>
                   </div>
                   {!data.journals.length ? (
@@ -354,17 +436,19 @@ export default function App() {
                       <div className="empty-icon">
                         <BookOpen size={28} />
                       </div>
-                      <h3>A fresh start for your books</h3>
+                      <h3>{tr("A fresh start for your books")}</h3>
                       <p>
-                        Add your first balanced entry or import a CSV.
+                        {tr("Add your first balanced entry or import a CSV.")}
                         <br />
-                        Your assistant will help you choose the right account.
+                        {tr(
+                          "Your assistant will help you choose the right account.",
+                        )}
                       </p>
                       <button onClick={importCSV}>
-                        <Upload size={16} /> Import your transactions
+                        <Upload size={16} /> {tr(" Import your transactions")}
                       </button>
                       <a href="/sample.csv" download>
-                        Download example CSV
+                        {tr("Download example CSV")}
                       </a>
                     </div>
                   ) : (
@@ -376,7 +460,9 @@ export default function App() {
                       post={(j) => run(() => ledger.post(j.id), "Entry posted")}
                       reverse={(j) => {
                         const reason = prompt(
-                          "Reason for reversal (original entry will remain in audit history)",
+                          tr(
+                            "Reason for reversal (original entry will remain in audit history)",
+                          ),
                         );
                         if (reason)
                           run(
@@ -389,23 +475,27 @@ export default function App() {
                 </section>
                 <aside className="context-panel">
                   <span className="guide-pill">
-                    <Sparkles size={14} /> GUIDED RULES
+                    <Sparkles size={14} /> {tr(" GUIDED RULES")}
                   </span>
-                  <h2>You don’t need to know every account.</h2>
+                  <h2>{tr("You don’t need to know every account.")}</h2>
                   <p>
-                    Tell us what happened. We’ll explain the choices, and you
-                    stay in charge.
+                    {tr(
+                      "Tell us what happened. We’ll explain the choices, and you stay in charge.",
+                    )}
                   </p>
                   <div className="example-question">
-                    “I bought a laptop for my business. Is it an expense?”
+                    {tr(
+                      "“I bought a laptop for my business. Is it an expense?”",
+                    )}
                   </div>
                   <button onClick={() => go("/assistant")}>
-                    Work it out together <ChevronRight size={17} />
+                    {tr("Work it out together ")}
+                    <ChevronRight size={17} />
                   </button>
                   <small>
-                    Question-led rules work now.
+                    {tr("Question-led rules work now.")}
                     <br />
-                    Connect Ollama locally for open-ended AI.
+                    {tr("Connect Ollama locally for open-ended AI.")}
                   </small>
                 </aside>
               </div>
@@ -413,20 +503,27 @@ export default function App() {
                 <div>
                   <CheckCheck size={21} />
                   <span>
-                    <strong>{drafts.length} drafts to review</strong>
-                    <small>Nothing is posted without your confirmation.</small>
+                    <strong>
+                      {drafts.length} {tr(" drafts to review")}
+                    </strong>
+                    <small>
+                      {tr("Nothing is posted without your confirmation.")}
+                    </small>
                   </span>
                 </div>
                 <button
                   className="text-btn"
                   onClick={() => go("/transactions")}
                 >
-                  Review inbox <ChevronRight size={15} />
+                  {tr("Review inbox ")}
+                  <ChevronRight size={15} />
                 </button>
               </div>
               <div className="disclaimer">
-                <HelpCircle size={14} /> Draft management records. Not
-                statutory, audit, or tax advice.
+                <HelpCircle size={14} />{" "}
+                {tr(
+                  " Draft management records. Not statutory, audit, or tax advice.",
+                )}
               </div>
             </>
           )}
@@ -438,6 +535,16 @@ export default function App() {
               run={run}
               ledger={ledger}
             />
+          )}
+          {path === "/operations" && (
+            <Suspense fallback={<p>{tr("Loading…")}</p>}>
+              <Operations
+                ledger={ledger}
+                data={data}
+                run={run}
+                storage={operationsStorage}
+              />
+            </Suspense>
           )}
           {path === "/accounts" && (
             <Accounts data={data} money={money} run={run} ledger={ledger} />
@@ -459,6 +566,9 @@ export default function App() {
           )}
           {path === "/whatsapp" && (
             <WhatsAppInbox data={data} ledger={ledger} run={run} />
+          )}
+          {path === "/telegram" && (
+            <TelegramInbox data={data} ledger={ledger} run={run} />
           )}
           {path === "/assistant" && (
             <Assistant
@@ -484,12 +594,17 @@ export default function App() {
             />
           )}
           {path === "/settings" && (
-            <SettingsPanel data={data} run={run} ledger={ledger} />
+            <SettingsPanel
+              data={data}
+              run={run}
+              ledger={ledger}
+              cloud={!!cloudCompany}
+            />
           )}
           {!navigation.some((n) => n[0] === path) && (
             <div className="empty">
-              <h2>Page not found</h2>
-              <button onClick={() => go("/")}>Go to overview</button>
+              <h2>{tr("Page not found")}</h2>
+              <button onClick={() => go("/")}>{tr("Go to overview")}</button>
             </div>
           )}
         </div>
@@ -515,14 +630,15 @@ function Metric({
   icon: ReactNode;
   foot: string;
 }) {
+  useLanguage();
   return (
     <div className="metric">
       <div>
-        <span>{title}</span>
+        <span>{tr(title)}</span>
         <div className="metric-icon">{icon}</div>
       </div>
       <strong>{value}</strong>
-      <small>{foot}</small>
+      <small>{tr(foot)}</small>
     </div>
   );
 }

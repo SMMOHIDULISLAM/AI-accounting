@@ -1,3 +1,18 @@
+# এআই হিসাব / AI Accounting — 0.5 learning preview
+
+Bangla-first, English-switchable bookkeeping with reviewed messaging drafts, a manufacturing/supply-chain and HR pilot, private-company trial storage, and optional Python, Java and C++ engines.
+
+Start on the prepared Windows PC: `D:\AI-Accounting\START-FREE.cmd`, then `http://127.0.0.1:3002/whatsapp`. Source setup: Node 24, `pnpm install --frozen-lockfile`, `pnpm build`, `pnpm free`.
+
+[বাংলা ব্যবহার নির্দেশিকা](docs/OPERATIONS-GUIDE-BN.md) · [Setup / editable modules / cloud](docs/PLATFORM-SETUP.md) · [Voluntary professional review](docs/PROFESSIONAL-REVIEW.md) · [Support / sponsorship](SPONSORSHIP.md)
+
+The local app has no 30-day restriction. The optional cloud learning trial has private owner registration and server-enforced 30-day writing access; read/export continues after expiry. Public deployment and real registration must be verified before inviting users. WhatsApp/Telegram live intake requires separate private credentials. Email sharing opens a user-reviewed mail draft. No CPA/FCA/CA certification, universal industry coverage or enterprise production readiness is claimed.
+
+Operations include full purchase receipt, BOM material consumption, WIP, finished goods, dispatch/transit/delivery, capacity, attendance and configurable payroll accrual. Journal proposals require separate financial review/posting. See the setup guide for omissions, limits and the two-part backup procedure. The rule-based agent proposes actions for confirmation; optional local Ollama requires its own model setup. Native engines are optional adapters with exact-result checks.
+
+The 73-source catalog and two retained licensed source snapshots remain; this is not a merger of 73 ERP systems. The historical 0.3 notes below describe that earlier release. In 0.5, a limited separate operations module and optional owner-only cloud synchronization have been added; full document subledgers, statutory tax, team roles and enterprise controls remain unfinished.
+
+---
 # AI Accounting
 
 A local-first double-entry bookkeeping app with a browser SQLite ledger, optional local Ollama assistance, and an optional **My Accounts** WhatsApp intake queue.

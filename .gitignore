@@ -16,3 +16,8 @@ data/
 public/sql-wasm.wasm
 __pycache__/
 **/target/
+engines/cpp/cost-engine
+engines/cpp/cost-engine.exe
+*.class
+.netlify/
+dist-cloud/
