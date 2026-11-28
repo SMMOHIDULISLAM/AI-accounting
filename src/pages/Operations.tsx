@@ -190,6 +190,8 @@ export default function Operations({
   };
   async function restore(file?: File) {
     if (!file || saving.current) return;
+    saving.current = true;
+    setBusy(true);
     setError("");
     try {
       if (file.size > 1_000_000) throw Error("Operations backup exceeds 1 MB");
@@ -204,8 +206,6 @@ export default function Operations({
         )
       )
         return;
-      saving.current = true;
-      setBusy(true);
       await storage.save(next);
       current.current = next;
       setState(next);
