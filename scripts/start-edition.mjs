@@ -17,6 +17,10 @@ if (edition === "core")
     "WA_PHONE_NUMBER_ID",
     "WA_BUSINESS_ACCOUNT_ID",
     "WA_ALLOWED_SENDERS",
+    "TG_WEBHOOK_SECRET",
+    "TG_INBOX_TOKEN",
+    "TG_ALLOWED_CHAT_IDS",
+    "TG_ALLOWED_USER_IDS",
   ])
     env[key] = "";
 const child = spawn(

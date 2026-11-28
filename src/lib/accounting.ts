@@ -1,12 +1,13 @@
 import type { Account, AccountType, Line, Snapshot } from "./types";
 import { minorUnitsText } from "./money";
+import { latinDigits } from "./digits";
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 /** Parse a decimal amount into integer minor units without floating-point arithmetic. */
 export function parseMoney(input: string): number {
   if (typeof input !== "string") throw new Error("Money must be text");
-  let value = input.trim();
+  let value = latinDigits(input).trim();
   if (!value) throw new Error("Money is required");
 
   let negative = false;
@@ -36,7 +37,11 @@ export function parseMoney(input: string): number {
   return negative ? -result : result;
 }
 
-export function formatMoney(cents: number, currency = "BDT"): string {
+export function formatMoney(
+  cents: number,
+  currency = "BDT",
+  locale = "en-US",
+): string {
   if (!Number.isSafeInteger(cents)) throw new Error("Money must be an integer");
   const exact = minorUnitsText(cents);
   const negative = exact.startsWith("-");
@@ -44,7 +49,7 @@ export function formatMoney(cents: number, currency = "BDT"): string {
   const separator = unsigned.indexOf(".");
   const wholeText = unsigned.slice(0, separator);
   const fractionText = unsigned.slice(separator + 1);
-  const formatter = new Intl.NumberFormat(undefined, {
+  const formatter = new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
     minimumFractionDigits: 2,
@@ -52,7 +57,17 @@ export function formatMoney(cents: number, currency = "BDT"): string {
   });
   return formatter
     .formatToParts(negative ? -Number(wholeText) : Number(wholeText))
-    .map((part) => (part.type === "fraction" ? fractionText : part.value))
+    .map((part) =>
+      part.type === "fraction"
+        ? [...fractionText]
+            .map((digit) =>
+              new Intl.NumberFormat(locale, { useGrouping: false }).format(
+                Number(digit),
+              ),
+            )
+            .join("")
+        : part.value,
+    )
     .join("");
 }
 

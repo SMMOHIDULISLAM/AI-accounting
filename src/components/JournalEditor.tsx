@@ -1,3 +1,10 @@
+import {
+  t as tr,
+  useLanguage,
+  accountLabel,
+  accountDescription,
+  message,
+} from "../lib/i18n";
 import { useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
@@ -40,6 +47,7 @@ export default function JournalEditor({
   close: () => void;
   save: (v: any) => Promise<void>;
 }) {
+  useLanguage();
   const amount = minorUnitsText(Math.abs(source?.amount || 0));
   const [date, setDate] = useState(existing?.date || source?.date || today());
   const [description, setDescription] = useState(
@@ -96,21 +104,21 @@ export default function JournalEditor({
     <form onSubmit={submit}>
       <div className="modal-title">
         <div>
-          <span className="eyebrow">REVIEW BOTH SIDES</span>
-          <h2>{existing ? "Edit draft" : "New journal entry"}</h2>
+          <span className="eyebrow">{tr("REVIEW BOTH SIDES")}</span>
+          <h2>{existing ? tr("Edit draft") : tr("New journal entry")}</h2>
         </div>
         <button
           type="button"
           className="icon-btn"
           onClick={close}
-          aria-label="Close"
+          aria-label={tr("Close")}
         >
           <X />
         </button>
       </div>
       <div className="form-grid">
         <label>
-          Date
+          {tr("Date")}
           <input
             type="date"
             required
@@ -119,7 +127,7 @@ export default function JournalEditor({
           />
         </label>
         <label>
-          Reference
+          {tr("Reference")}
           <input
             value={reference}
             onChange={(e) => setReference(e.target.value)}
@@ -127,22 +135,23 @@ export default function JournalEditor({
         </label>
       </div>
       <label>
-        What happened?
+        {tr("What happened?")}
         <input
           required
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="e.g. paid the office rent"
+          placeholder={tr("e.g. paid the office rent")}
         />
       </label>
       {data.settings.guidance && (
         <div className="inline-guide">
           <Sparkles size={16} />
           <div>
-            <b>Guided rules · no connected AI required</b>
+            <b>{tr("Guided rules · no connected AI required")}</b>
             <p>
-              Is this new spending, a durable asset, an existing bill, or money
-              received in advance?
+              {tr(
+                "Is this new spending, a durable asset, an existing bill, or money received in advance?",
+              )}
             </p>
             <select
               value={guide}
@@ -152,7 +161,7 @@ export default function JournalEditor({
                   update(1, "accountId", e.target.value);
               }}
             >
-              <option value="">Select the explanation that fits</option>
+              <option value="">{tr("Select the explanation that fits")}</option>
               {[
                 ["expense", "New ordinary business cost"],
                 ["equipment", "A durable item used over several periods"],
@@ -166,49 +175,52 @@ export default function JournalEditor({
                 ["rent", "Payment for using our premises"],
               ].map(([v, t]) => (
                 <option value={v} key={v}>
-                  {t}
+                  {tr(t)}
                 </option>
               ))}
             </select>
             <small>
-              Check existing invoices, delivery, tax and your capitalization
-              policy before choosing.
+              {tr(
+                "Check existing invoices, delivery, tax and your capitalization policy before choosing.",
+              )}
             </small>
           </div>
         </div>
       )}
       <div className="journal-head">
-        <span>ACCOUNT HEAD</span>
-        <span>DEBIT</span>
-        <span>CREDIT</span>
+        <span>{tr("ACCOUNT HEAD")}</span>
+        <span>{tr("DEBIT")}</span>
+        <span>{tr("CREDIT")}</span>
       </div>
       {lines.map((l, i) => (
         <div className="journal-line" key={i}>
           <div>
             <select
-              aria-label={"Account line " + (i + 1)}
+              aria-label={tr("Account line ") + (i + 1)}
               value={l.accountId}
               onChange={(e) => update(i, "accountId", e.target.value)}
             >
               {data.accounts.map((a) => (
                 <option value={a.id} key={a.id}>
-                  {a.code} · {a.name}
+                  {a.code} · {accountLabel(a)}
                 </option>
               ))}
             </select>
             <small>
-              {data.accounts.find((a) => a.id === l.accountId)?.description}
+              {accountDescription(
+                data.accounts.find((a) => a.id === l.accountId),
+              )}
             </small>
           </div>
           <input
-            aria-label={"Debit line " + (i + 1)}
+            aria-label={tr("Debit line ") + (i + 1)}
             inputMode="decimal"
             placeholder="0.00"
             value={l.debit}
             onChange={(e) => update(i, "debit", e.target.value)}
           />
           <input
-            aria-label={"Credit line " + (i + 1)}
+            aria-label={tr("Credit line ") + (i + 1)}
             inputMode="decimal"
             placeholder="0.00"
             value={l.credit}
@@ -216,7 +228,7 @@ export default function JournalEditor({
           />
           <button
             type="button"
-            aria-label="Remove line"
+            aria-label={tr("Remove line")}
             className="icon-btn"
             disabled={lines.length <= 2}
             onClick={() => setLines(lines.filter((_, n) => n !== i))}
@@ -232,19 +244,21 @@ export default function JournalEditor({
           setLines([...lines, { accountId: "expense", debit: "", credit: "" }])
         }
       >
-        <Plus size={14} /> Add line
+        <Plus size={14} /> {tr(" Add line")}
       </button>
       <div className="note">
-        Debits and credits describe the two sides of a transaction—not simply
-        income and expense. Drafts may be incomplete. Only balanced entries can
-        be posted.
+        {tr(
+          "Debits and credits describe the two sides of a transaction—not simply income and expense. Drafts may be incomplete. Only balanced entries can be posted.",
+        )}
       </div>
-      {error && <div className="alert error">{error}</div>}
+      {error && <div className="alert error">{tr(error)}</div>}
       <div className="modal-footer">
         <button type="button" className="secondary" onClick={close}>
-          Cancel
+          {tr("Cancel")}
         </button>
-        <button disabled={busy}>{busy ? "Saving…" : "Save draft"}</button>
+        <button disabled={busy}>
+          {busy ? tr("Saving…") : tr("Save draft")}
+        </button>
       </div>
     </form>
   );

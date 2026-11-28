@@ -1,3 +1,9 @@
+@font-face {
+  font-family: "Noto Sans Bengali";
+  src: url("/fonts/NotoSansBengali.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+}
 :root {
   font-family: Inter, sans-serif;
   color: #263936;
@@ -7,6 +13,20 @@
   --teal: #086b63;
   --muted: #7a8984;
   --border: #e3e9e5;
+}
+html:lang(bn) {
+  font-family: "Noto Sans Bengali", "Nirmala UI", Inter, sans-serif;
+}
+html:lang(bn) .numeric { font-family: "Noto Sans Bengali", "Nirmala UI", sans-serif; }
+html:lang(bn) .eyebrow, html:lang(bn) .nav-label { letter-spacing: normal; }
+.language-switch { display: inline-flex; margin: 0; flex-shrink: 0; }
+.language-switch select { width: auto; min-width: 88px; margin: 0; padding: 6px 9px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (max-width: 650px) {
+  .topbar { gap: 7px; padding: 10px 12px; }
+  .top-actions { gap: 7px; }
+  .top-actions .local-dot, .top-actions .user-avatar { display: none; }
+  .language-switch select { min-width: 76px; }
 }
 * {
   box-sizing: border-box;
@@ -1371,3 +1391,9 @@ code {
 .integration-check { display: flex; align-items: flex-start; gap: 10px; }
 .integration-check input { width: auto; margin-top: 4px; }
 .integration-panel dd { overflow-wrap: anywhere; }
+.table-wrap table { min-width: 620px; }
+.auth-shell { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.auth-card { width: min(540px, 100%); }
+.auth-brand { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.auth-brand h1 { margin-right: auto; font-size: 24px; }
+.auth-card button { margin-top: 12px; }

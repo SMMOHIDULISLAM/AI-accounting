@@ -6,7 +6,7 @@ This is an isolated ERP edition for full customer/supplier documents, inventory 
 
 ## Local evaluation
 
-Requires Docker Engine/Compose with Linux-container support and sufficient available resources. Docker CLI was unavailable in the working environment, so this stack has **not been launched or tested end to end**. The YAML and password/port substitutions were checked; that does not prove container startup. This is a local evaluation profile, not a production deployment.
+Requires Docker Engine/Compose with Linux-container support and sufficient available resources. Docker Desktop's CLI is now installed on the owner's PC, but the Linux engine pipe was unavailable during setup. This stack has **not been launched or tested end to end**. Finish Docker Desktop/WSL setup before evaluation. The YAML and password/port substitutions were checked; that does not prove container startup. This is a local evaluation profile, not a production deployment.
 
 1. Copy `.env.example` to `.env` in this directory.
 2. Generate two different random passwords, e.g. `node -e "console.log(require('node:crypto').randomBytes(24).toString('hex'))"`, and fill the required values privately.

@@ -207,8 +207,7 @@ function validateDateAndText(date: string, description: string): void {
 
 async function openStore(): Promise<IDBDatabase | undefined> {
   const indexedDBObject = (globalThis as any).indexedDB as
-    | IDBFactory
-    | undefined;
+    IDBFactory | undefined;
   if (!indexedDBObject) {
     if (isBrowserRuntime)
       throw new Error("IndexedDB is required for browser ledger persistence");
@@ -271,7 +270,9 @@ async function writeBytes(bytes: Uint8Array): Promise<void> {
   });
 }
 
-async function acquireLifetimeLock(): Promise<() => Promise<void>> {
+async function acquireLifetimeLock(
+  storageId = "local",
+): Promise<() => Promise<void>> {
   // Node now also provides Web Locks. Host ledgers have independent storage;
   // the cross-tab lock belongs only to browser IndexedDB connections.
   if (!isBrowserRuntime) return async () => undefined;
@@ -294,7 +295,9 @@ async function acquireLifetimeLock(): Promise<() => Promise<void>> {
     releaseHold = resolve;
   });
   const request = locks.request(
-    "ai-accounting-ledger-lifetime",
+    storageId === "local"
+      ? "ai-accounting-ledger-lifetime"
+      : "ai-accounting-ledger-" + storageId,
     { mode: "exclusive", ifAvailable: true },
     async (lock: any) => {
       if (!lock) {
@@ -592,6 +595,12 @@ function checkSchema(db: SQLDatabase, SQL: SQLModule): void {
   }
 }
 
+export interface LedgerStorage {
+  id: string;
+  read(): Promise<Uint8Array | undefined>;
+  write(bytes: Uint8Array): Promise<void>;
+}
+
 export class Ledger {
   private db: SQLDatabase;
   private SQL: SQLModule;
@@ -603,14 +612,17 @@ export class Ledger {
     SQL: SQLModule,
     db: SQLDatabase,
     releaseLock: () => Promise<void>,
+    private storage?: LedgerStorage,
   ) {
     this.SQL = SQL;
     this.db = db;
     this.releaseLock = releaseLock;
   }
 
-  static async open(): Promise<Ledger> {
-    const releaseLock = await acquireLifetimeLock();
+  static async open(storage?: LedgerStorage): Promise<Ledger> {
+    if (storage && !/^[a-zA-Z0-9_-]{1,100}$/.test(storage.id))
+      throw Error("Invalid ledger storage identity");
+    const releaseLock = await acquireLifetimeLock(storage?.id);
     try {
       const SQL = await (initSqlJs as any)({
         locateFile: (file: string) => {
@@ -621,16 +633,18 @@ export class Ledger {
           return `${cwd}/node_modules/sql.js/dist/${file}`;
         },
       });
-      const stored = await readBytes();
+      const stored = await (storage ? storage.read() : readBytes());
       const db = stored ? new SQL.Database(stored) : new SQL.Database();
       if (!stored) {
         createSchema(db);
         seed(db);
-        await writeBytes(exportDatabase(db));
+        await (storage
+          ? storage.write(exportDatabase(db))
+          : writeBytes(exportDatabase(db)));
       }
       enableForeignKeys(db);
       checkSchema(db, SQL);
-      return new Ledger(SQL, db, releaseLock);
+      return new Ledger(SQL, db, releaseLock, storage);
     } catch (error) {
       await releaseLock();
       throw error;
@@ -639,6 +653,9 @@ export class Ledger {
 
   private ensureOpen(): void {
     if (this.closed) throw new Error("Ledger is released");
+  }
+  private persistBytes(bytes: Uint8Array): Promise<void> {
+    return this.storage ? this.storage.write(bytes) : writeBytes(bytes);
   }
   private accountIds(): Set<string> {
     return new Set(
@@ -657,7 +674,7 @@ export class Ledger {
         this.db.run("BEGIN");
         mutator();
         this.db.run("COMMIT");
-        await writeBytes(this.backupBytes());
+        await this.persistBytes(this.backupBytes());
       } catch (error) {
         try {
           this.db.run("ROLLBACK");
@@ -863,6 +880,37 @@ export class Ledger {
   async saveDraft(input: SaveDraftInput): Promise<string> {
     const id = this.prepareDraft(input);
     await this.persistMutation(() => this.saveDraftInTransaction(input, id));
+    return id;
+  }
+
+  async importOperationDraft(
+    eventId: string,
+    input: Omit<SaveDraftInput, "id">,
+  ): Promise<string> {
+    if (!/^[a-zA-Z0-9_-]{1,100}$/.test(eventId))
+      throw Error("Invalid operational event ID");
+    const draft = {
+      ...input,
+      id: "operation-" + eventId,
+      reference: "operations:" + eventId,
+    };
+    const id = this.prepareDraft(draft);
+    await this.persistMutation(() => {
+      const existing = this.journal(id);
+      if (existing) {
+        if (
+          existing.description !== draft.description ||
+          existing.date !== draft.date ||
+          existing.reference !== draft.reference ||
+          JSON.stringify(existing.lines) !== JSON.stringify(draft.lines)
+        )
+          throw Error(
+            "Operational draft content changed; review the original event",
+          );
+        return;
+      }
+      this.saveDraftInTransaction(draft, id);
+    });
     return id;
   }
 
@@ -1219,13 +1267,13 @@ export class Ledger {
       }
       const before = this.backupBytes();
       try {
-        await writeBytes(exportDatabase(candidate));
+        await this.persistBytes(exportDatabase(candidate));
         this.db.close();
         this.db = candidate;
         candidate = undefined;
       } catch (error) {
         try {
-          await writeBytes(before);
+          if (!this.storage) await writeBytes(before);
         } catch {
           /* preserve the original failure */
         }

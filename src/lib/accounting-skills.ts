@@ -1,6 +1,7 @@
 // Adaptations of Ledger Reborn's _allocate and _aging policies.
 // Copyright (c) 2026 Ledger Reborn contributors. MIT; see third_party/ledger-reborn/LICENSE.
 import { assertDate } from "./accounting";
+import { latinDigits } from "./digits";
 import type { ExternalBook } from "./external-books";
 
 export const ACCOUNTING_SKILLS = [
@@ -153,6 +154,7 @@ export function stockCost(
   soldQuantity: string,
 ) {
   const quantity = (text: string) => {
+    text = latinDigits(text);
     if (!/^\d+(?:\.\d{1,6})?$/.test(text))
       throw Error("Use nonnegative quantities with at most six decimal places");
     const [whole, fraction = ""] = text.split(".");

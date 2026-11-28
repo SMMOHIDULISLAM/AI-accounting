@@ -1,3 +1,4 @@
+import { t as tr, useLanguage, accountLabel } from "../lib/i18n";
 import { useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
@@ -25,6 +26,7 @@ import { parseCSV, mapCSV, exportCSV } from "../lib/csv";
 import type { Snapshot, Line, Journal, SourceRow, Account } from "../lib/types";
 import { today, saveFile } from "../components/utils";
 export default function Reconciliation({ data, money, run, ledger }: any) {
+  useLanguage();
   const [account, setAccount] = useState("bank");
   const [open, setOpen] = useState("0");
   const [close, setClose] = useState("0");
@@ -57,7 +59,7 @@ export default function Reconciliation({ data, money, run, ledger }: any) {
       <div className="panel padded">
         <div className="form-grid">
           <label>
-            Bank / cash account
+            {tr("Bank / cash account")}
             <select
               value={account}
               onChange={(e) => setAccount(e.target.value)}
@@ -66,13 +68,13 @@ export default function Reconciliation({ data, money, run, ledger }: any) {
                 .filter((a: Account) => ["bank", "cash"].includes(a.id))
                 .map((a: Account) => (
                   <option value={a.id} key={a.id}>
-                    {a.name}
+                    {accountLabel(a)}
                   </option>
                 ))}
             </select>
           </label>
           <label>
-            From
+            {tr("From")}
             <input
               type="date"
               value={from}
@@ -80,7 +82,7 @@ export default function Reconciliation({ data, money, run, ledger }: any) {
             />
           </label>
           <label>
-            To
+            {tr("To")}
             <input
               type="date"
               value={to}
@@ -88,29 +90,30 @@ export default function Reconciliation({ data, money, run, ledger }: any) {
             />
           </label>
           <label>
-            Statement opening balance
+            {tr("Statement opening balance")}
             <input value={open} onChange={(e) => setOpen(e.target.value)} />
           </label>
           <label>
-            Statement closing balance
+            {tr("Statement closing balance")}
             <input value={close} onChange={(e) => setClose(e.target.value)} />
           </label>
         </div>
         <div className="reconcile-total">
-          <span>Opening + posted movements − statement closing</span>
+          <span>{tr("Opening + posted movements − statement closing")}</span>
           <strong>{difference}</strong>
         </div>
         <p className="muted">
-          Balance inputs are a review calculation, not posted opening entries.
-          Import a reconciliation-only CSV first. Matching never creates
-          balancing entries.
+          {tr(
+            "Balance inputs are a review calculation, not posted opening entries. Import a reconciliation-only CSV first. Matching never creates balancing entries.",
+          )}
         </p>
       </div>
       <section className="panel">
         <div className="panel-title">
-          <h2>Bank statement matches</h2>
+          <h2>{tr("Bank statement matches")}</h2>
           <span>
-            {sources.filter((s: SourceRow) => !s.matchedLine).length} unmatched
+            {sources.filter((s: SourceRow) => !s.matchedLine).length}{" "}
+            {tr(" unmatched")}
           </span>
         </div>
         {sources.map((s: SourceRow) => {
@@ -132,18 +135,18 @@ export default function Reconciliation({ data, money, run, ledger }: any) {
               <b className="numeric">{money(s.amount)}</b>
               {s.matchedLine ? (
                 <>
-                  <span className="chip posted">Confirmed match</span>
+                  <span className="chip posted">{tr("Confirmed match")}</span>
                   <button
                     className="text-btn"
                     onClick={() => run(() => ledger.unmatch(s.id))}
                   >
-                    Undo match
+                    {tr("Undo match")}
                   </button>
                 </>
               ) : (
                 <div>
                   <select
-                    aria-label="Proposed bank match"
+                    aria-label={tr("Proposed bank match")}
                     defaultValue=""
                     onChange={async (e) => {
                       if (!e.target.value) return;
@@ -153,7 +156,7 @@ export default function Reconciliation({ data, money, run, ledger }: any) {
                       if (
                         x &&
                         confirm(
-                          "Confirm this statement row matches " +
+                          tr("Confirm this statement row matches ") +
                             x.j.description +
                             "?",
                         )
@@ -167,8 +170,8 @@ export default function Reconciliation({ data, money, run, ledger }: any) {
                   >
                     <option value="">
                       {matches.length
-                        ? "Choose a candidate to confirm"
-                        : "No amount/date candidate"}
+                        ? tr("Choose a candidate to confirm")
+                        : tr("No amount/date candidate")}
                     </option>
                     {matches.map((x: any) => (
                       <option key={x.key} value={x.key}>
@@ -178,7 +181,9 @@ export default function Reconciliation({ data, money, run, ledger }: any) {
                     ))}
                   </select>
                   <small>
-                    Same amount, within 3 days. Confirm the reference yourself.
+                    {tr(
+                      "Same amount, within 3 days. Confirm the reference yourself.",
+                    )}
                   </small>
                 </div>
               )}
@@ -188,8 +193,8 @@ export default function Reconciliation({ data, money, run, ledger }: any) {
         {!sources.length && (
           <div className="empty">
             <CheckCheck />
-            <h3>No statement rows in this period</h3>
-            <p>Import CSV with purpose “reconciliation only”.</p>
+            <h3>{tr("No statement rows in this period")}</h3>
+            <p>{tr("Import CSV with purpose “reconciliation only”.")}</p>
           </div>
         )}
       </section>

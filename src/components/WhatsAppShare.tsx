@@ -1,8 +1,10 @@
+import { t as tr, useLanguage, message } from "../lib/i18n";
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, X } from "lucide-react";
 import { whatsappUrl } from "../lib/whatsapp";
 
 export default function WhatsAppShare({ message }: { message: string }) {
+  useLanguage();
   const [open, setOpen] = useState(false);
   const [phone, setPhone] = useState("");
   const [text, setText] = useState(message);
@@ -28,7 +30,7 @@ export default function WhatsAppShare({ message }: { message: string }) {
           setOpen(true);
         }}
       >
-        <MessageCircle size={16} /> Share on WhatsApp
+        <MessageCircle size={16} /> {tr(" Share on WhatsApp")}
       </button>
       <dialog
         ref={dialog}
@@ -40,21 +42,22 @@ export default function WhatsAppShare({ message }: { message: string }) {
         }}
       >
         <div className="modal-title">
-          <h2 id="whatsapp-title">Review WhatsApp message</h2>
+          <h2 id="whatsapp-title">{tr("Review WhatsApp message")}</h2>
           <button
             className="icon-btn"
-            aria-label="Close WhatsApp preview"
+            aria-label={tr("Close WhatsApp preview")}
             onClick={() => setOpen(false)}
           >
             <X />
           </button>
         </div>
         <p>
-          Check the figures and recipient. These totals will leave your device
-          when you open WhatsApp.
+          {tr(
+            "Check the figures and recipient. These totals will leave your device when you open WhatsApp.",
+          )}
         </p>
         <label>
-          Recipient phone (optional)
+          {tr("Recipient phone (optional)")}
           <input
             autoFocus
             type="tel"
@@ -64,12 +67,13 @@ export default function WhatsAppShare({ message }: { message: string }) {
             onChange={(event) => setPhone(event.target.value)}
           />
           <small>
-            Include country code, or leave blank to choose a contact in
-            WhatsApp.
+            {tr(
+              "Include country code, or leave blank to choose a contact in WhatsApp.",
+            )}
           </small>
         </label>
         <label>
-          Message preview
+          {tr("Message preview")}
           <textarea
             rows={12}
             maxLength={4000}
@@ -79,13 +83,13 @@ export default function WhatsAppShare({ message }: { message: string }) {
         </label>
         {error && (
           <p role="alert" className="alert error">
-            {error}
+            {tr(error)}
           </p>
         )}
-        <p className="muted">You choose Send inside WhatsApp.</p>
+        <p className="muted">{tr("You choose Send inside WhatsApp.")}</p>
         <div className="modal-footer">
           <button className="secondary" onClick={() => setOpen(false)}>
-            Cancel
+            {tr("Cancel")}
           </button>
           {href ? (
             <a
@@ -95,10 +99,10 @@ export default function WhatsAppShare({ message }: { message: string }) {
               rel="noopener noreferrer"
               referrerPolicy="no-referrer"
             >
-              Open WhatsApp
+              {tr("Open WhatsApp")}
             </a>
           ) : (
-            <button disabled>Open WhatsApp</button>
+            <button disabled>{tr("Open WhatsApp")}</button>
           )}
         </div>
       </dialog>

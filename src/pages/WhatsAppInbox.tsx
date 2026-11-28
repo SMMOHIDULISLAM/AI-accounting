@@ -1,3 +1,11 @@
+import {
+  t as tr,
+  useLanguage,
+  accountLabel,
+  uiMoney,
+  message,
+  getLanguage,
+} from "../lib/i18n";
 import { useState } from "react";
 import {
   parseWhatsAppSale,
@@ -18,6 +26,7 @@ export default function WhatsAppInbox({
   ledger: Ledger;
   run: (action: () => Promise<unknown>, message?: string) => Promise<boolean>;
 }) {
+  useLanguage();
   const [token, setToken] = useState("");
   const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
   const [status, setStatus] = useState(
@@ -25,7 +34,11 @@ export default function WhatsAppInbox({
   );
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [example, setExample] = useState("sale cash 100 bdt, credit 50 bdt");
+  const [example, setExample] = useState(() =>
+    getLanguage() === "bn"
+      ? "বিক্রি নগদ ১০০ বাকি ৫০"
+      : "sale cash 100 bdt, credit 50 bdt",
+  );
   const [date, setDate] = useState(today());
   let preview: WhatsAppDraft;
   try {
@@ -104,15 +117,17 @@ export default function WhatsAppInbox({
   return (
     <div className="settings-layout">
       <section className="panel padded">
-        <span className="guide-pill">MY ACCOUNTS · WHATSAPP INTAKE</span>
-        <h2>Turn your message into a draft</h2>
+        <span className="guide-pill">
+          {tr("MY ACCOUNTS · WHATSAPP INTAKE")}
+        </span>
+        <h2>{tr("Turn your message into a draft")}</h2>
         <p>
-          Try your sales message here. “Credit” means the amount a customer
-          still owes; it becomes Receivables. Tax, inventory cost and customer
-          details need your review.
+          {tr(
+            "Try your sales message here. “Credit” means the amount a customer still owes; it becomes Receivables. Tax, inventory cost and customer details need your review.",
+          )}
         </p>
         <label>
-          Transaction date
+          {tr("Transaction date")}
           <input
             type="date"
             value={date}
@@ -120,8 +135,9 @@ export default function WhatsAppInbox({
           />
         </label>
         <label>
-          Your message
+          {tr("Your message")}
           <textarea
+            aria-label={tr("Your message")}
             value={example}
             maxLength={8000}
             onChange={(event) => setExample(event.target.value)}
@@ -129,18 +145,23 @@ export default function WhatsAppInbox({
         </label>
         {preview.ready ? (
           <>
-            <p>BDT draft · {preview.date}</p>
+            <p>
+              {tr("BDT draft · ")}
+              {preview.date}
+            </p>
             {preview.lines.map((line) => (
               <div className="statement-row" key={line.accountId}>
                 <span>
-                  {data.accounts.find(
-                    (account) => account.id === line.accountId,
-                  )?.name || line.accountId}
+                  {accountLabel(
+                    data.accounts.find(
+                      (account) => account.id === line.accountId,
+                    ),
+                  ) || line.accountId}
                 </span>
                 <strong>
                   {line.debit
-                    ? "Debit " + formatMoney(line.debit, "BDT")
-                    : "Credit " + formatMoney(line.credit, "BDT")}
+                    ? tr("Debit ") + uiMoney(line.debit, "BDT")
+                    : tr("Credit ") + uiMoney(line.credit, "BDT")}
                 </strong>
               </div>
             ))}
@@ -159,27 +180,29 @@ export default function WhatsAppInbox({
                 }
               }}
             >
-              Create text draft
+              {tr("Create text draft")}
             </button>
             {data.settings.currency !== "BDT" && (
               <p role="alert">
-                This first intake version accepts BDT sales. Select a matching
-                ledger.
+                {tr(
+                  "This first intake version accepts BDT sales. Select a matching ledger.",
+                )}
               </p>
             )}
           </>
         ) : (
-          <p role="status">{preview.reason}</p>
+          <p role="status">{tr(preview.reason)}</p>
         )}
       </section>
       <section className="panel padded">
-        <h2>Messages from WhatsApp</h2>
+        <h2>{tr("Messages from WhatsApp")}</h2>
         <p>
-          Save your connected WhatsApp Business number as “My Accounts” in your
-          phone. Only approved sender numbers enter this inbox.
+          {tr(
+            "Save your connected WhatsApp Business number as “My Accounts” in your phone. Only approved sender numbers enter this inbox.",
+          )}
         </p>
         <label>
-          Inbox access token
+          {tr("Inbox access token")}
           <input
             type="password"
             autoComplete="off"
@@ -188,12 +211,12 @@ export default function WhatsAppInbox({
           />
         </label>
         <button disabled={busy} onClick={refresh}>
-          {busy ? "Working…" : "Connect / refresh inbox"}
+          {busy ? tr("Working…") : tr("Connect / refresh inbox")}
         </button>
-        <p role="status">{status}</p>
+        <p role="status">{tr(status)}</p>
         {error && (
           <p role="alert" className="alert error">
-            {error}
+            {tr(error)}
           </p>
         )}
         {messages.map((message) => {
@@ -208,36 +231,36 @@ export default function WhatsAppInbox({
               </p>
               {message.media ? (
                 <p>
-                  Cash-memo attachment reference received. Photo/PDF download
-                  and OCR are not available in this version. Enter and review
-                  the amounts from your original memo.
+                  {tr(
+                    "Cash-memo attachment reference received. Photo/PDF download and OCR are not available in this version. Enter and review the amounts from your original memo.",
+                  )}
                 </p>
               ) : draft.ready && message.type === "text" ? (
                 <>
                   {draft.lines.map((line) => (
                     <p key={line.accountId}>
-                      {
+                      {accountLabel(
                         data.accounts.find(
                           (account) => account.id === line.accountId,
-                        )?.name
-                      }
+                        ),
+                      )}
                       :{" "}
                       {line.debit
-                        ? "Debit " + formatMoney(line.debit, "BDT")
-                        : "Credit " + formatMoney(line.credit, "BDT")}
+                        ? tr("Debit ") + uiMoney(line.debit, "BDT")
+                        : tr("Credit ") + uiMoney(line.credit, "BDT")}
                     </p>
                   ))}
                   <button
                     disabled={busy || data.settings.currency !== draft.currency}
                     onClick={() => importMessage(message)}
                   >
-                    Save reviewed draft
+                    {tr("Save reviewed draft")}
                   </button>
                 </>
               ) : (
                 <p>
                   {draft.ready
-                    ? "This message type needs manual review."
+                    ? tr("This message type needs manual review.")
                     : draft.reason}
                 </p>
               )}
@@ -245,9 +268,9 @@ export default function WhatsAppInbox({
           );
         })}
         <p className="muted">
-          Tokens stay in this page’s memory. Messages are stored on your intake
-          server; your accounting ledger stays in this browser. Refresh and
-          import into one designated ledger.
+          {tr(
+            "Tokens stay in this page’s memory. Messages are stored on your intake server; your accounting ledger stays in this browser. Refresh and import into one designated ledger.",
+          )}
         </p>
       </section>
     </div>

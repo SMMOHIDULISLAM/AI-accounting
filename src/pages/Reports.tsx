@@ -1,3 +1,10 @@
+import {
+  t as tr,
+  useLanguage,
+  accountLabel,
+  message,
+  getLanguage,
+} from "../lib/i18n";
 import { useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
@@ -27,6 +34,7 @@ import { today, saveFile } from "../components/utils";
 import { minorUnitsText } from "../lib/money";
 import { reportMessage } from "../lib/whatsapp";
 import WhatsAppShare from "../components/WhatsAppShare";
+import ChannelShare from "../components/ChannelShare";
 export default function Reports({
   data,
   money,
@@ -34,6 +42,7 @@ export default function Reports({
   data: Snapshot;
   money: (n: number) => string;
 }) {
+  useLanguage();
   const [from, setFrom] = useState(today().slice(0, 7) + "-01");
   const [to, setTo] = useState(today());
   const [tab, setTab] = useState("Profit & loss");
@@ -41,8 +50,9 @@ export default function Reports({
     return (
       <div className="panel padded">
         <p role="alert">
-          Select two valid dates. From date must not be after the reporting
-          date.
+          {tr(
+            "Select two valid dates. From date must not be after the reporting date.",
+          )}
         </p>
         <input
           type="date"
@@ -58,8 +68,9 @@ export default function Reports({
   } catch (error) {
     return (
       <p className="alert error" role="alert">
-        Report unavailable: {(error as Error).message}. Records and backup
-        controls remain available.
+        {tr("Report unavailable: ")}
+        {(error as Error).message}
+        {tr(". Records and backup controls remain available.")}
       </p>
     );
   }
@@ -149,9 +160,9 @@ export default function Reports({
   return (
     <section className="panel">
       <div className="report-controls">
-        <span className="guide-pill">DRAFT MANAGEMENT REPORT</span>
+        <span className="guide-pill">{tr("DRAFT MANAGEMENT REPORT")}</span>
         <label>
-          From
+          {tr("From")}
           <input
             type="date"
             value={from}
@@ -159,7 +170,7 @@ export default function Reports({
           />
         </label>
         <label>
-          To / as of
+          {tr("To / as of")}
           <input
             type="date"
             value={to}
@@ -167,12 +178,13 @@ export default function Reports({
           />
         </label>
         <button className="secondary" onClick={exportRows}>
-          <Download size={16} /> Export CSV
+          <Download size={16} /> {tr(" Export CSV")}
         </button>
         <WhatsAppShare
           key={`${from}:${to}`}
-          message={reportMessage(data, from, to)}
+          message={reportMessage(data, from, to, getLanguage())}
         />
+        <ChannelShare message={reportMessage(data, from, to, getLanguage())} />
       </div>
       <div className="tabs">
         {[
@@ -188,26 +200,26 @@ export default function Reports({
             onClick={() => setTab(t)}
             key={t}
           >
-            {t}
+            {tr(t)}
           </button>
         ))}
       </div>
       <div className="report-paper">
         <div className="report-header">
           <img src="/logo.svg" width="32" />
-          <h2>{data.settings.name || "My business"}</h2>
-          <h3>{tab}</h3>
+          <h2>{data.settings.name || tr("My business")}</h2>
+          <h3>{tr(tab)}</h3>
           <p>
             {tab === "Balance sheet" || tab === "Trial balance"
-              ? "As of " + to
-              : from + " to " + to}{" "}
+              ? tr("As of ") + to
+              : from + tr(" to ") + to}{" "}
             · {data.settings.currency}
           </p>
         </div>
         {rows.length > 0 &&
           rows.map(([label, value]) => (
             <div className="statement-row" key={label}>
-              <span>{label}</span>
+              <span>{tr(label)}</span>
               <strong className="numeric">{money(value as number)}</strong>
             </div>
           ))}
@@ -215,22 +227,22 @@ export default function Reports({
           <table>
             <thead>
               <tr>
-                <th>Account</th>
-                <th>Debit</th>
-                <th>Credit</th>
+                <th>{tr("Account")}</th>
+                <th>{tr("Debit")}</th>
+                <th>{tr("Credit")}</th>
               </tr>
             </thead>
             <tbody>
               {r.trial.map((x) => (
                 <tr key={x.account.id}>
-                  <td>{x.account.name}</td>
+                  <td>{accountLabel(x.account)}</td>
                   <td className="numeric">{money(x.debit)}</td>
                   <td className="numeric">{money(x.credit)}</td>
                 </tr>
               ))}
               <tr>
                 <td>
-                  <b>Total</b>
+                  <b>{tr("Total")}</b>
                 </td>
                 <td>{money(r.trial.reduce((n, x) => n + x.debit, 0))}</td>
                 <td>{money(r.trial.reduce((n, x) => n + x.credit, 0))}</td>
@@ -243,10 +255,10 @@ export default function Reports({
             <table>
               <thead>
                 <tr>
-                  <th>Date / description</th>
-                  <th>Account</th>
-                  <th>Debit</th>
-                  <th>Credit</th>
+                  <th>{tr("Date / description")}</th>
+                  <th>{tr("Account")}</th>
+                  <th>{tr("Debit")}</th>
+                  <th>{tr("Credit")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -263,10 +275,9 @@ export default function Reports({
                           <small>{j.description}</small>
                         </td>
                         <td>
-                          {
-                            data.accounts.find((a) => a.id === l.accountId)
-                              ?.name
-                          }
+                          {accountLabel(
+                            data.accounts.find((a) => a.id === l.accountId),
+                          )}
                         </td>
                         <td>{money(l.debit)}</td>
                         <td>{money(l.credit)}</td>
@@ -296,22 +307,24 @@ export default function Reports({
                 </div>
               ))}
             <p>
-              Unmatched statement rows remain visible. No automatic adjustments.
+              {tr(
+                "Unmatched statement rows remain visible. No automatic adjustments.",
+              )}
             </p>
           </>
         )}
         <div className="report-note">
           <b>
             {r.balanced
-              ? "Posted ledger is balanced."
-              : "Review: ledger imbalance."}
+              ? tr("Posted ledger is balanced.")
+              : tr("Review: ledger imbalance.")}
           </b>
           <p>
-            General accrual bookkeeping. Framework preference:{" "}
-            {data.settings.framework || "Not selected"}. Not a compliance
-            certification. Adjustments, taxes, policies, notes, comparatives and
-            other required statements must be reviewed separately. Cash
-            movements are not a complete statutory cash-flow statement.
+            {tr("General accrual bookkeeping. Framework preference:")}{" "}
+            {tr(data.settings.framework || "Not selected")}
+            {tr(
+              ". Not a compliance certification. Adjustments, taxes, policies, notes, comparatives and other required statements must be reviewed separately. Cash movements are not a complete statutory cash-flow statement.",
+            )}
           </p>
         </div>
       </div>

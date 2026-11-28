@@ -1,3 +1,4 @@
+import { t as tr, useLanguage, uiNumber, message } from "../lib/i18n";
 import { useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
@@ -34,6 +35,7 @@ export default function ImportCSV({
   close: () => void;
   submit: (rows: any[]) => Promise<void>;
 }) {
+  useLanguage();
   const [parsed, setParsed] = useState<{
     headers: string[];
     rows: Record<string, string>[];
@@ -90,19 +92,20 @@ export default function ImportCSV({
     <div>
       <div className="modal-title">
         <div>
-          <span className="eyebrow">IMPORT, THEN UNDERSTAND</span>
-          <h2>Import CSV</h2>
+          <span className="eyebrow">{tr("IMPORT, THEN UNDERSTAND")}</span>
+          <h2>{tr("Import CSV")}</h2>
         </div>
-        <button className="icon-btn" onClick={close} aria-label="Close">
+        <button className="icon-btn" onClick={close} aria-label={tr("Close")}>
           <X />
         </button>
       </div>
       <div className="note">
-        Records enter a review inbox, not your posted ledger. Choose your bank's
-        sign convention. Dates must be unambiguous.
+        {tr(
+          "Records enter a review inbox, not your posted ledger. Choose your bank's sign convention. Dates must be unambiguous.",
+        )}
       </div>
       <label className="file-drop">
-        Select CSV file
+        {tr("Select CSV file")}
         <input
           type="file"
           accept=".csv,text/csv"
@@ -128,21 +131,21 @@ export default function ImportCSV({
         />
       </label>
       <a href="/sample.csv" download>
-        Download example CSV
+        {tr("Download example CSV")}
       </a>
       {parsed && (
         <>
           <div className="form-grid">
             {Object.entries(mapping).map(([k, v]) => (
               <label key={k}>
-                {k}
+                {tr(k)}
                 <select
                   value={v}
                   onChange={(e) =>
                     setMapping({ ...mapping, [k]: e.target.value })
                   }
                 >
-                  <option value="">Not mapped</option>
+                  <option value="">{tr("Not mapped")}</option>
                   {parsed.headers.map((h) => (
                     <option key={h}>{h}</option>
                   ))}
@@ -152,36 +155,38 @@ export default function ImportCSV({
           </div>
           <div className="form-grid">
             <label>
-              Amount direction
+              {tr("Amount direction")}
               <select
                 value={sign}
                 onChange={(e) => setSign(e.target.value as typeof sign)}
               >
                 <option value="inflow-positive">
-                  Positive = money into bank
+                  {tr("Positive = money into bank")}
                 </option>
                 <option value="outflow-positive">
-                  Positive = money out of bank
+                  {tr("Positive = money out of bank")}
                 </option>
               </select>
             </label>
             <label>
-              Import purpose
+              {tr("Import purpose")}
               <select
                 value={mode}
                 onChange={(e) => setMode(e.target.value as typeof mode)}
               >
-                <option value="transactions">Classify new transactions</option>
+                <option value="transactions">
+                  {tr("Classify new transactions")}
+                </option>
                 <option value="reconciliation">
-                  Bank statement for reconciliation only
+                  {tr("Bank statement for reconciliation only")}
                 </option>
               </select>
             </label>
           </div>
           <p>
-            <b>{result.valid.length}</b> valid rows ·{" "}
-            <b>{result.errors.length}</b> errors · <b>{duplicates}</b> probable
-            duplicates
+            <b>{result.valid.length}</b> {tr(" valid rows ·")}{" "}
+            <b>{result.errors.length}</b> {tr(" errors · ")}
+            <b>{duplicates}</b> {tr(" probable duplicates")}
           </p>
           {duplicates > 0 && (
             <label className="check-label">
@@ -190,21 +195,22 @@ export default function ImportCSV({
                 checked={keepDuplicates}
                 onChange={(e) => setKeepDuplicates(e.target.checked)}
               />{" "}
-              Keep probable duplicates (otherwise explicitly excluded)
+              {tr("Keep probable duplicates (otherwise explicitly excluded)")}
             </label>
           )}
           {result.errors.map((e, i) => (
             <div className="error-text" key={i}>
-              Row {e.row}: {e.message}
+              {tr("Row ")}
+              {uiNumber(e.row)}: {tr(e.message)}
             </div>
           ))}
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Description</th>
-                  <th>Amount</th>
+                  <th>{tr("Date")}</th>
+                  <th>{tr("Description")}</th>
+                  <th>{tr("Amount")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -220,10 +226,10 @@ export default function ImportCSV({
           </div>
         </>
       )}
-      {error && <div className="alert error">{error}</div>}
+      {error && <div className="alert error">{tr(error)}</div>}
       <div className="modal-footer">
         <button className="secondary" onClick={close}>
-          Cancel
+          {tr("Cancel")}
         </button>
         <button
           disabled={!rows.length || !!result.errors.length || busy}
@@ -236,7 +242,11 @@ export default function ImportCSV({
             }
           }}
         >
-          {busy ? "Importing…" : `Import ${rows.length} reviewed rows`}
+          {busy
+            ? tr("Importing…")
+            : message("Import {count} reviewed rows", {
+                count: uiNumber(rows.length),
+              })}
         </button>
       </div>
     </div>

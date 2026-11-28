@@ -1,4 +1,5 @@
 import { assertDate, parseMoney } from "./accounting";
+import { latinDigits } from "./digits";
 import type { SourceRow } from "./types";
 
 export interface CSVMapping {
@@ -74,7 +75,7 @@ export function parseCSV(text: string): {
 }
 
 function parseFlexibleDate(value: string): string {
-  const text = value.trim();
+  const text = latinDigits(value).trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
     assertDate(text);
     return text;
@@ -183,7 +184,8 @@ function safeCell(value: string | number): string {
     typeof value === "string" &&
     (/^[\t\r\n]/.test(text) || /^\s*[=+\-@]/.test(text)) &&
     !/^-\d+(?:\.\d+)?$/.test(text)
-      ? `'${text}` : text;
+      ? `'${text}`
+      : text;
   return /[",\r\n]/.test(formulaSafe)
     ? `"${formulaSafe.replace(/"/g, '""')}"`
     : formulaSafe;

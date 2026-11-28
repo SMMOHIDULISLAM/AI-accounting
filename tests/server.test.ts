@@ -6,8 +6,9 @@ import { createApi } from "../server/index";
 let server: Server;
 let mode = "empty";
 let origin: string;
+let lastSystemPrompt = "";
 beforeAll(async () => {
-  const transport: typeof fetch = async (url) => {
+  const transport: typeof fetch = async (url, init) => {
     if (String(url) === "http://127.0.0.1:11434/api/tags")
       return new Response(
         JSON.stringify({
@@ -25,6 +26,7 @@ beforeAll(async () => {
         }),
       );
     expect(String(url)).toBe("http://127.0.0.1:11434/api/chat");
+    lastSystemPrompt = JSON.parse(String(init?.body)).messages[0].content;
     return new Response(
       JSON.stringify({
         message: {
@@ -117,5 +119,17 @@ describe("local AI safety adapter (mock service, no real inference)", () => {
     const body = await res.json();
     expect(body.needsReview).toBe(true);
     expect(body.options[0].accountId).toBe("sales");
+  });
+  it("requests Bangla prose from the local model while preserving JSON/account IDs", async () => {
+    mode = "local";
+    const res = await fetch(origin + "/api/ai/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: origin },
+      body: JSON.stringify({ ...request, context: { ...request.context, language: "bn" } }),
+    });
+    expect(res.status).toBe(200);
+    expect(lastSystemPrompt).toContain("in Bangla (Bengali)");
+    expect(lastSystemPrompt).toContain("JSON keys and account IDs unchanged");
+    expect((await res.json()).needsReview).toBe(true);
   });
 });
